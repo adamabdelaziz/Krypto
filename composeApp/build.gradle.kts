@@ -2,9 +2,14 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+
+val enableAndroid = project.findProperty("enableAndroid") == "true"
+val enableIos = project.findProperty("enableIos") == "true"
+val enableDesktop = project.findProperty("enableDesktop") == "true"
+
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
+    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinxSerialization)
@@ -13,9 +18,12 @@ plugins {
 kotlin {
     applyDefaultHierarchyTemplate()
 
-    //iosX64()
-    iosArm64()
-    //iosSimulatorArm64()
+    if (enableIos) {
+        //iosX64()
+        iosArm64()
+        //iosSimulatorArm64()
+    }
+
 
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -24,11 +32,13 @@ kotlin {
         }
     }
 
+
     jvm("desktop")
 
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(libs.kermit)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material)
@@ -61,30 +71,38 @@ kotlin {
 
         val commonTest by getting
 
+        if (enableIos) {
+            val iosMain by getting {
+                dependsOn(commonMain)
+            }
 
-        val iosMain by getting {
-            dependsOn(commonMain)
-        }
-
-        val iosTest by getting {
-            dependsOn(commonTest)
-        }
-
-        val androidMain by getting {
-            dependencies {
-                implementation(compose.preview)
-                implementation(libs.androidx.activity.compose)
-
-                implementation(libs.ktor.client.okhttp)
-                implementation(libs.koin.android)
-                implementation(libs.koin.androidx.compose)
+            val iosTest by getting {
+                dependsOn(commonTest)
+                dependencies {
+                    implementation(libs.ktor.client.darwin)
+                }
             }
         }
 
-        val desktopMain by getting {
-            dependencies {
-                implementation(compose.desktop.currentOs)
-                implementation(libs.kotlinx.coroutines.swing)
+
+            val androidMain by getting {
+                dependencies {
+                    implementation(compose.preview)
+                    implementation(libs.androidx.activity.compose)
+
+                    implementation(libs.ktor.client.okhttp)
+                    implementation(libs.koin.android)
+                    implementation(libs.koin.androidx.compose)
+                }
+            }
+        
+        if (enableDesktop) {
+            val desktopMain by getting {
+                dependencies {
+                    implementation(compose.desktop.currentOs)
+                    implementation(libs.kotlinx.coroutines.swing)
+                    implementation(libs.ktor.client.cio)
+                }
             }
         }
     }
@@ -97,6 +115,7 @@ kotlin {
         }
     }
 }
+
 
 android {
     namespace = "org.adam.kryptobot"
@@ -132,18 +151,24 @@ android {
     }
 }
 
+
+
 dependencies {
+    implementation(libs.androidx.activity.ktx)
     debugImplementation(compose.uiTooling)
 }
 
-compose.desktop {
-    application {
-        mainClass = "org.adam.kryptobot.MainKt"
+if (enableDesktop) {
+    compose.desktop {
+        application {
+            mainClass = "org.adam.kryptobot.MainKt"
 
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.adam.kryptobot"
-            packageVersion = "1.0.0"
+            nativeDistributions {
+                targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+                packageName = "org.adam.kryptobot"
+                packageVersion = "1.0.0"
+            }
         }
     }
 }
+

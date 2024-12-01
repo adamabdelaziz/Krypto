@@ -27,6 +27,8 @@ apolloRuntime = "3.8.5"
 flowCombine = "1.3.0"
 lifecycleRuntimeComposeDesktop = "2.8.6"
 roboquant = "2.2.0"
+kermit = "2.0.5"
+activityKtx = "1.9.3"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -45,8 +47,8 @@ kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-co
 
 kamel = { module = "media.kamel:kamel-image", version.ref = "kamel" }
 apollo-runtime = { module = "com.apollographql.apollo3:apollo-runtime", version.ref = "apolloRuntime" }
-flow-combine = { module = "com.github.Zhuinden:flow-combinetuple-kt", version.ref = "flowCombine" }
 androidx-lifecycle-runtime-compose-desktop = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose-desktop", version.ref = "lifecycleRuntimeComposeDesktop" }
+kermit = { module = "co.touchlab:kermit", version.ref = "kermit"}
 
 # Roboquant
 roboquant = { module = "org.roboquant:roboquant", version.ref = "roboquant"}
@@ -62,6 +64,7 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-cio = {module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
@@ -72,8 +75,9 @@ voyager-bottom-sheet = { module = "cafe.adriel.voyager:voyager-bottom-sheet-navi
 voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", version.ref = "voyager" }
 voyager-koin = { module = "cafe.adriel.voyager:voyager-koin", version.ref = "voyager" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
 
-## Room
+# Room
 #room-gradle-plugin = { module = "androidx.room:room-gradle-plugin", version.ref = "room" }
 #room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 #room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }

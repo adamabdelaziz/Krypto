@@ -9,6 +9,9 @@ fun initKoin(config: KoinAppDeclaration? = null) {
         modules(
             coroutineModule,
             networkModule,
+            dataModule,
+            repositoryModule,
+            screenModelsModule,
         )
     }
 }
