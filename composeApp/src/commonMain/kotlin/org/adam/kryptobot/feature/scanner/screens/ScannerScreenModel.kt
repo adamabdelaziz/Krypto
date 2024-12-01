@@ -38,7 +38,7 @@ class ScannerScreenModel(
     private var monitorTokenAddressJob: Job? = null
 
     init {
-        scanTokens()
+        scanBoostedTokens()
     }
 
     fun onEvent(event: ScannerScreenEvent) {
@@ -54,7 +54,7 @@ class ScannerScreenModel(
             }
 
             is ScannerScreenEvent.OnTokenAddressSelected -> {
-                monitorTokenAddress(event.chainId, event.tokenAddress)
+                monitorAllTokenAddress()
             }
         }
     }
@@ -83,16 +83,25 @@ class ScannerScreenModel(
     }
 
     private fun monitorTokenAddress(chainId:String, tokenAddress: String) {
-        Logger.d("monitorTokenAddress monkas $tokenAddress called")
+        Logger.d("monitorTokenAddress monkas $chainId $tokenAddress called")
         monitorTokenAddressJob?.cancelAndNull()
         monitorTokenAddressJob = screenModelScope.launch {
             while (true) {
-                scannerRepository.getDexPairsByTokenAddress(chainId, tokenAddress)
+                scannerRepository.getDexPairsByChainAndAddress(chainId, tokenAddress)
                 delay(SCAN_DELAY)
             }
         }
     }
 
+    private fun monitorAllTokenAddress() {
+        monitorTokenAddressJob?.cancelAndNull()
+        monitorTokenAddressJob = screenModelScope.launch {
+            while (true) {
+                scannerRepository.getDexPairsByAddressList()
+                delay(SCAN_DELAY)
+            }
+        }
+    }
 
     companion object {
         private const val SCAN_DELAY = 15000L

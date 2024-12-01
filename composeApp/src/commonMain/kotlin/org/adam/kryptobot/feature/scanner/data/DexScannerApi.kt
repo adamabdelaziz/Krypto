@@ -23,8 +23,9 @@ interface DexScannerApi {
         tokenAddress: String
     ): List<PaymentStatusDto>
 
-    suspend fun getPairsByAddress(chainId: String, tokenAddress: String): List<DexPairDto>
-    suspend fun getPairsByTokenAddress(tokenAddress: String): List<DexPairDto>
+    suspend fun getPairsByAddress(chainId: String, tokenAddress: String): DexPairDto?
+    suspend fun getPairsByTokenAddress(tokenAddress: String): DexPairDto?
+    suspend fun searchForPairs(query: String): DexPairDto?
 }
 
 class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
@@ -32,9 +33,9 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
         return try {
             val response: HttpResponse = client.get("${BASE_API_URL}token-profiles/latest/v1")
             val rawResponse = response.bodyAsText()
-            Logger.d("Raw Response: $rawResponse")
+            //Logger.d("Raw Response: $rawResponse")
             if (response.status.isSuccess()) {
-                val tokens = Json.decodeFromString<List<TokenDto>>(rawResponse)
+                val tokens = response.body<List<TokenDto>>()
                 tokens.takeIf { it.isNotEmpty() } ?: listOf()
             } else {
                 Logger.d("Error response: ${response.status}, $rawResponse")
@@ -48,7 +49,16 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
 
     override suspend fun getLatestBoostedTokens(): List<BoostedTokenDto> {
         return try {
-            client.get("${BASE_API_URL}token-boosts/latest/v1").body<List<BoostedTokenDto>>()
+            val response: HttpResponse = client.get("${BASE_API_URL}token-boosts/latest/v1")
+            val rawResponse = response.bodyAsText()
+            //Logger.d("Raw Response: $rawResponse")
+            if (response.status.isSuccess()) {
+                val tokens = response.body<List<BoostedTokenDto>>()
+                tokens.takeIf { it.isNotEmpty() } ?: listOf()
+            } else {
+                Logger.d("Error response: ${response.status}, $rawResponse")
+                listOf()
+            }
         } catch (e: Exception) {
             Logger.d("API Exception ${e.message}")
             listOf()
@@ -77,26 +87,57 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
         }
     }
 
-    override suspend fun getPairsByAddress(chainId: String, tokenAddress: String): List<DexPairDto> {
+    override suspend fun getPairsByAddress(
+        chainId: String,
+        tokenAddress: String
+    ): DexPairDto? {
+        Logger.d("API called with $chainId and $tokenAddress")
         return try {
-            client.get("${BASE_API_URL}latest/dex/pairs/${chainId}/${tokenAddress}")
-                .body<List<DexPairDto>>()
+            val response: HttpResponse =
+                client.get("${BASE_API_URL}latest/dex/pairs/${chainId}/${tokenAddress}")
+            val rawResponse = response.bodyAsText()
+            Logger.d("Raw Response: $rawResponse")
+            if (response.status.isSuccess()) {
+                val pairs = response.body<DexPairDto>()
+                pairs
+            } else {
+                Logger.d("Error ${response.status}")
+                null
+            }
         } catch (e: Exception) {
             Logger.d("API Exception ${e.message}")
-            listOf()
+            null
         }
     }
 
-    override suspend fun getPairsByTokenAddress(tokenAddress: String): List<DexPairDto> {
+    override suspend fun getPairsByTokenAddress(tokenAddress: String): DexPairDto? {
         return try {
-            val response: HttpResponse = client.get("${BASE_API_URL}latest/dex/tokens/$tokenAddress")
+            val response: HttpResponse =
+                client.get("${BASE_API_URL}latest/dex/tokens/$tokenAddress")
             val rawJson = response.bodyAsText()
-            Logger.d("RawJson is $rawJson")
+            //Logger.d("RawJson is $rawJson")
             client.get("${BASE_API_URL}latest/dex/tokens/${tokenAddress}")
-                .body<List<DexPairDto>>()
+                .body<DexPairDto>()
         } catch (e: Exception) {
             Logger.d("API Exception ${e.message}")
-            listOf()
+            null
+        }
+    }
+
+    override suspend fun searchForPairs(query: String): DexPairDto? {
+        return try {
+            val response: HttpResponse =
+                client.get("https://api.dexscreener.com/latest/dex/search") {
+                    url {
+                        parameters.append("q", query)
+                    }
+                }.body()
+            val rawJson = response.bodyAsText()
+            Logger.d("RawJson is $rawJson")
+            response.body<DexPairDto>()
+        } catch (e: Exception) {
+            Logger.d("API Exception ${e.message}")
+            null
         }
     }
 

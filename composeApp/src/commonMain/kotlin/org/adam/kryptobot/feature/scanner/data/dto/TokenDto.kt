@@ -9,6 +9,7 @@ data class TokenDto(
     val tokenAddress: String,
     val icon: String? = null,
     val header: String? = null,
+    val openGraph:String? = null,
     val description: String? = null,
     val links: List<LinkDto>? = null,
 )

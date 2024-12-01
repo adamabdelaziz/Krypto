@@ -43,9 +43,14 @@ class ScannerScreen : Screen {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.fillMaxWidth(1f)) {
-                state.latestTokens.forEach {
+                state.latestBoostedTokens.forEach {
                     TextButton(onClick = {
-                        onEvent(ScannerScreenEvent.OnTokenAddressSelected(it.chainId, it.tokenAddress))
+                        onEvent(
+                            ScannerScreenEvent.OnTokenAddressSelected(
+                                it.chainId,
+                                it.tokenAddress
+                            )
+                        )
                     }, content = {
                         Text(it.chainId)
                         Spacer(Modifier.width(8.dp))
@@ -54,13 +59,13 @@ class ScannerScreen : Screen {
                 }
             }
             LazyColumn(modifier = Modifier.fillMaxWidth(2f)) {
-                state.latestDexPairs.forEach { entry->
+                state.latestDexPairs.forEach { entry ->
                     item {
                         Text("Token Address: ${entry.key}")
                     }
-                    items(entry.value) { value->
-                        Text("${value.pairs?.size} Size")
-                        Text("${value.pairs?.firstOrNull()?.priceNative}")
+                    item {
+                        Text("${entry.value.pairs?.size} Size")
+                        Text("${entry.value.pairs?.firstOrNull()?.priceNative}")
                     }
                 }
             }

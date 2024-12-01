@@ -62,7 +62,7 @@ fun DexPairView(
                 dexPair.pairs?.let {
                     items(it) { pair ->
                         Text(
-                            text = pair.liquidity.usd.toString(),
+                            text = pair.liquidity?.usd.toString(),
                             modifier = Modifier.padding(8.dp),
                             style = MaterialTheme.typography.body1
                         )
