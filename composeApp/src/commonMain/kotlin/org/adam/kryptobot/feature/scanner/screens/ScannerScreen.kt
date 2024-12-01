@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
@@ -23,6 +25,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.adam.kryptobot.ui.components.PairInfoCard
 
 class ScannerScreen : Screen {
 
@@ -42,43 +45,18 @@ class ScannerScreen : Screen {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.fillMaxWidth(1f)) {
-                state.latestBoostedTokens.forEach {
-                    TextButton(onClick = {
-                        onEvent(
-                            ScannerScreenEvent.OnTokenAddressSelected(
-                                it.chainId,
-                                it.tokenAddress
-                            )
-                        )
-                    }, content = {
-                        Text(it.chainId)
-                        Spacer(Modifier.width(8.dp))
-                        Text(it.tokenAddress)
-                    })
-                }
-            }
-            LazyColumn(modifier = Modifier.fillMaxWidth(2f)) {
-                state.latestDexPairs.forEach { entry ->
-                    item {
-                        Text("Token Address: ${entry.key}")
-                    }
-                    item {
-                        Text("${entry.value.pairs?.size} Size")
-                        Text("${entry.value.pairs?.firstOrNull()?.priceNative}")
-                    }
-                }
-            }
+            Button(onClick =  {
+                onEvent(ScannerScreenEvent.OnTokenAddressSelected("", ""))
+            }, content = {
+                Text("Start")
+            })
 
-//            Column(modifier = Modifier.fillMaxWidth(1f)) {
-//                state.latestBoostedTokens.forEach {
-//                    TextButton(onClick = {}, content = {
-//                        Text(it.chainId)
-//                        Spacer(Modifier.width(8.dp))
-//                        Text(it.tokenAddress)
-//                    })
-//                }
-//            }
+            LazyColumn(modifier = Modifier.fillMaxWidth(2f)) {
+                items(state.latestDexPairs) { pair ->
+                    PairInfoCard(pair)
+                }
+
+            }
         }
 
     }

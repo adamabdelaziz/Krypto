@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import org.adam.kryptobot.feature.scanner.data.DexScannerApi
 import org.adam.kryptobot.feature.scanner.data.dto.BoostedTokenDto
 import org.adam.kryptobot.feature.scanner.data.dto.DexPairDto
+import org.adam.kryptobot.feature.scanner.data.dto.Pair
 import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
 
 interface ScannerRepository {
@@ -21,7 +22,7 @@ interface ScannerRepository {
 
     val latestTokens: StateFlow<List<TokenDto>>
     val latestBoostedTokens: StateFlow<List<BoostedTokenDto>>
-    val latestDexPairs: StateFlow<Map<String, DexPairDto>>
+    val latestDexPairs: StateFlow<List<Pair>>
 }
 
 class ScannerRepositoryImpl(
@@ -46,9 +47,9 @@ class ScannerRepositoryImpl(
             started = SharingStarted.WhileSubscribed(5000),
         )
 
-    private val _latestDexPairs: MutableStateFlow<Map<String, DexPairDto>> =
-        MutableStateFlow(mapOf())
-    override val latestDexPairs: StateFlow<Map<String, DexPairDto>> = _latestDexPairs.stateIn(
+    private val _latestDexPairs: MutableStateFlow<List<Pair>> =
+        MutableStateFlow(listOf())
+    override val latestDexPairs: StateFlow<List<Pair>> = _latestDexPairs.stateIn(
         scope = stateFlowScope,
         initialValue = _latestDexPairs.value,
         started = SharingStarted.WhileSubscribed(5000),
@@ -98,9 +99,15 @@ class ScannerRepositoryImpl(
                         Logger.d("Pair Addresses Distinct ${pairAddresses.distinct().size} Base Addresses Distinct ${baseAddresses.distinct().size} QuoteAddresses Distinct ${quoteAddresses.distinct().size}")
                     }
                     /*
-                        TODO:Store list of pairs based on their pair addresses as unique identifier
+                        TODO:Store list of pairs based on their pair addresses as unique identifier instead of map based on token address
+                        Realistically only use the new entry if pair address already exists
+
                      */
-                    updateDexPairs(tokenAddress, response)
+                    val oldList = _latestDexPairs.value
+                    val thisList = it.pairs ?: listOf()
+                    val newList = (oldList + thisList).distinctBy { it.pairAddress }
+                    Logger.d("Old List Size ${oldList.size} this list size ${thisList.size} new disticnt list size ${newList.size}")
+                    _latestDexPairs.value = newList
                 }
             } catch (e: Exception) {
                 Logger.d(e.message ?: " Null Error Message for getDexPairsByTokenAddress()")
@@ -112,18 +119,10 @@ class ScannerRepositoryImpl(
         withContext(Dispatchers.IO) {
             try {
                 val response = api.getPairsByAddress(chainId, tokenAddress)
-                response?.let {
-                    updateDexPairs(tokenAddress, response)
-                }
+                //TODO this was always null
             } catch (e: Exception) {
                 Logger.d(e.message ?: " Null Error Message for getDexPairsByTokenAddress()")
             }
-        }
-    }
-
-    private fun updateDexPairs(tokenAddress: String, pairs: DexPairDto) {
-        _latestDexPairs.value = _latestDexPairs.value.toMutableMap().apply {
-            this[tokenAddress] = pairs
         }
     }
 }

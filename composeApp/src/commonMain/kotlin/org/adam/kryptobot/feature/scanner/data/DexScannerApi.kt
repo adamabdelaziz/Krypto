@@ -115,7 +115,10 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
             val response: HttpResponse =
                 client.get("${BASE_API_URL}latest/dex/tokens/$tokenAddress")
             val rawJson = response.bodyAsText()
-            //Logger.d("RawJson is $rawJson")
+            val formattedJson = Json { prettyPrint = true }.parseToJsonElement(rawJson).toString()
+            Logger.d("Formatted JSON:\n" +
+                    "$formattedJson")
+            println("Formatted JSON:\n$formattedJson")
             client.get("${BASE_API_URL}latest/dex/tokens/${tokenAddress}")
                 .body<DexPairDto>()
         } catch (e: Exception) {
