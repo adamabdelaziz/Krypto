@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import org.adam.kryptobot.feature.scanner.data.DexScannerApi
 import org.adam.kryptobot.feature.scanner.data.dto.BoostedTokenDto
 import org.adam.kryptobot.feature.scanner.data.dto.Pair
+import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
 import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 
@@ -21,6 +22,7 @@ interface ScannerRepository {
 
     suspend fun getDexPairsByAddressList(category: TokenCategory) // This is supposed to be multiple comma separated token addresses
     suspend fun getDexPairsByChainAndAddress(chainId: String, tokenAddress: String)
+    suspend fun getOrdersPaidFor(chainId: String, tokenAddress: String)
 
     //TODO make a wrapper for DTO and then map to TokenCategory
     val latestTokens: StateFlow<List<TokenDto>>
@@ -28,7 +30,7 @@ interface ScannerRepository {
     val mostActiveBoostedTokens: StateFlow<List<BoostedTokenDto>>
 
     val latestDexPairs: StateFlow<Map<TokenCategory, List<Pair>>>
-
+    val ordersPaidForByTokenAddress: StateFlow<List<PaymentStatusDto>>
 }
 
 class ScannerRepositoryImpl(
@@ -68,6 +70,16 @@ class ScannerRepositoryImpl(
         _latestDexPairs.stateIn(
             scope = stateFlowScope,
             initialValue = _latestDexPairs.value,
+            started = SharingStarted.WhileSubscribed(5000),
+        )
+
+    private val _ordersPaidFor: MutableStateFlow<List<PaymentStatusDto>> =
+        MutableStateFlow(listOf())
+
+    override val ordersPaidForByTokenAddress: StateFlow<List<PaymentStatusDto>> =
+        _ordersPaidFor.stateIn(
+            scope = stateFlowScope,
+            initialValue = _ordersPaidFor.value,
             started = SharingStarted.WhileSubscribed(5000),
         )
 
@@ -115,9 +127,11 @@ class ScannerRepositoryImpl(
                     TokenCategory.LATEST -> {
                         _latestTokens.value.map { it.tokenAddress }
                     }
+
                     TokenCategory.LATEST_BOOSTED -> {
                         _latestBoostedTokens.value.map { it.tokenAddress }
                     }
+
                     else -> {
                         _mostActiveBoostedTokens.value.map { it.tokenAddress }
                     }
@@ -141,7 +155,7 @@ class ScannerRepositoryImpl(
                                 oldPairsMap[newPair.pairAddress] ?: newPair
                             } + oldList.filterNot { oldPair ->
                                 fetchedPairs.any { it.pairAddress == oldPair.pairAddress }
-                            }.sortedBy { pair->
+                            }.sortedBy { pair ->
                                 pair.priceUsd?.toDouble()
                             }
 
@@ -167,6 +181,20 @@ class ScannerRepositoryImpl(
             try {
                 val response = api.getPairsByAddress(chainId, tokenAddress)
                 //TODO this was always null
+            } catch (e: Exception) {
+                Logger.d(e.message ?: " Null Error Message for getDexPairsByTokenAddress()")
+            }
+        }
+    }
+
+    override suspend fun getOrdersPaidFor(chainId: String, tokenAddress: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val response = api.checkOrdersPaidForOfToken(chainId, tokenAddress)
+                val currentList = _ordersPaidFor.value
+                val newList = (response + currentList).distinctBy { it.paymentTimestamp }.sortedBy { it.paymentTimestamp }
+                Logger.d("Orders Paid For Response Size ${response.size} $chainId $tokenAddress")
+                _ordersPaidFor.value = newList
             } catch (e: Exception) {
                 Logger.d(e.message ?: " Null Error Message for getDexPairsByTokenAddress()")
             }

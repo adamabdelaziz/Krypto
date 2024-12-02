@@ -2,7 +2,7 @@ package org.adam.kryptobot.feature.scanner.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import cancelAndNull
+import org.adam.kryptobot.util.cancelAndNull
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.adam.kryptobot.feature.scanner.data.dto.Token
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 
@@ -31,13 +30,15 @@ class ScannerScreenModel(
         scannerRepository.latestBoostedTokens,
         scannerRepository.latestDexPairs,
         _selectedTokenCategory,
-    ) { latestTokens, latestBoostedTokens, latestDexPairs, selectedTokenCategory ->
+        scannerRepository.ordersPaidForByTokenAddress
+    ) { latestTokens, latestBoostedTokens, latestDexPairs, selectedTokenCategory, orders ->
         val pairs = latestDexPairs[selectedTokenCategory] ?: listOf()
         ScannerScreenUiState(
             latestTokens = latestTokens,
             latestBoostedTokens = latestBoostedTokens,
             latestDexPairs = pairs,
-            selectedTokenCategory = selectedTokenCategory
+            selectedTokenCategory = selectedTokenCategory,
+            currentPaymentStatus = orders,
         )
     }.stateIn(
         scope = screenModelScope,
@@ -49,9 +50,11 @@ class ScannerScreenModel(
     private var boostedTokenScanJob: Job? = null
     private var mostBoostedTokenScanJob: Job? = null
     private var monitorTokenAddressJob: Job? = null
+    private var monitorTokenAddressJobTwo: Job? = null
+    private var monitorOrderJob: Job? = null
 
     init {
-       // scanBoostedTokens()
+        // scanBoostedTokens()
     }
 
     fun onEvent(event: ScannerScreenEvent) {
@@ -67,7 +70,11 @@ class ScannerScreenModel(
             }
 
             is ScannerScreenEvent.OnTokenAddressSelected -> {
-                monitorAllTokenAddress()
+                val chainId = event.pair.chainId ?: ""
+                val tokenAddress = event.pair.baseToken?.address ?: ""
+                val pairAddress = event.pair.pairAddress ?: ""
+                monitorOrders(chainId, tokenAddress)
+                monitorTokenAddress(chainId, pairAddress)
             }
 
             is ScannerScreenEvent.OnTokenCategorySelected -> {
@@ -116,13 +123,25 @@ class ScannerScreenModel(
 
     private fun monitorTokenAddress(chainId: String, tokenAddress: String) {
         Logger.d("monitorTokenAddress monkas $chainId $tokenAddress called")
-        monitorTokenAddressJob?.cancelAndNull()
-        monitorTokenAddressJob = screenModelScope.launch {
+        monitorTokenAddressJobTwo?.cancelAndNull()
+        monitorTokenAddressJobTwo = screenModelScope.launch {
             while (true) {
                 scannerRepository.getDexPairsByChainAndAddress(chainId, tokenAddress)
                 delay(SCAN_DELAY)
             }
         }
+        monitorTokenAddressJobTwo?.start()
+    }
+
+    private fun monitorOrders(chainId: String, tokenAddress: String) {
+        monitorOrderJob?.cancelAndNull()
+        monitorOrderJob = screenModelScope.launch {
+            while (true) {
+                scannerRepository.getOrdersPaidFor(chainId, tokenAddress)
+                delay(SCAN_DELAY)
+            }
+        }
+        monitorOrderJob?.start()
     }
 
     private fun monitorAllTokenAddress() {
@@ -133,6 +152,7 @@ class ScannerScreenModel(
                 delay(SCAN_DELAY)
             }
         }
+        monitorTokenAddressJob?.start()
     }
 
     private fun switchCategory(category: TokenCategory) {
@@ -148,6 +168,7 @@ class ScannerScreenModel(
                         .let { monitorAllTokenAddress() }
                 }
             }
+
             TokenCategory.MOST_ACTIVE_BOOSTED -> {
                 scanMostBoostedTokens()
                 screenModelScope.launch {
@@ -157,6 +178,7 @@ class ScannerScreenModel(
                         .let { monitorAllTokenAddress() }
                 }
             }
+
             TokenCategory.LATEST -> {
                 scanTokens()
                 screenModelScope.launch {

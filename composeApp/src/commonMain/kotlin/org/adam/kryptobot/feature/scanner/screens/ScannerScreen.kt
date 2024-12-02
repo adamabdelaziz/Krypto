@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.ui.components.PairInfoCard
+import org.adam.kryptobot.ui.components.PaymentStatusCard
 
 class ScannerScreen : Screen {
 
@@ -47,11 +49,11 @@ class ScannerScreen : Screen {
             verticalArrangement = Arrangement.Top,
         ) {
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
-                Button(modifier = Modifier.padding(end = 8.dp), onClick = {
-                    onEvent(ScannerScreenEvent.OnTokenAddressSelected("", ""))
-                }, content = {
-                    Text("Start")
-                })
+//                Button(modifier = Modifier.padding(end = 8.dp), onClick = {
+//                    onEvent(ScannerScreenEvent.OnTokenAddressSelected("", ""))
+//                }, content = {
+//                    Text("Start")
+//                })
                 Button(onClick = {
                     onEvent(ScannerScreenEvent.OnStopSelected)
                 }, content = {
@@ -60,7 +62,7 @@ class ScannerScreen : Screen {
             }
 
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
-                for(category in TokenCategory.entries) {
+                for (category in TokenCategory.entries) {
                     Button(modifier = Modifier.padding(end = 8.dp), onClick = {
                         onEvent(ScannerScreenEvent.OnTokenCategorySelected(category))
                     }, content = {
@@ -69,13 +71,23 @@ class ScannerScreen : Screen {
                 }
             }
 
-            LazyColumn(modifier = Modifier.fillMaxWidth(2f)) {
-                items(state.latestDexPairs) { pair ->
-                    PairInfoCard(pair)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                LazyColumn(modifier = Modifier.fillMaxWidth(0.80f)) {
+                    items(state.latestDexPairs) { pair ->
+                        PairInfoCard(pair = pair, onClick = {
+                            onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
+                        })
+                    }
                 }
-
+                if (state.currentPaymentStatus.isNotEmpty()) {
+                    LazyColumn(modifier = Modifier.fillMaxWidth(0.80f)) {
+                        items(state.currentPaymentStatus) { status ->
+                            PaymentStatusCard(paymentStatus = status)
+                        }
+                    }
+                }
             }
-        }
 
+        }
     }
 }

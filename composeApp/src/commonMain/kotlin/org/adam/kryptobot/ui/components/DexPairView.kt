@@ -39,7 +39,9 @@ import io.kamel.core.getOrNull
 import io.kamel.image.asyncPainterResource
 import org.adam.kryptobot.feature.scanner.data.dto.DexPairDto
 import org.adam.kryptobot.feature.scanner.data.dto.Pair
+import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
 import org.adam.kryptobot.feature.scanner.data.dto.TxCount
+import org.adam.kryptobot.util.formatUnixTimestamp
 
 @Composable
 fun DexPairView(
@@ -89,7 +91,7 @@ fun DexPairView(
 }
 
 @Composable
-fun PairInfoCard(pair: Pair?) {
+fun PairInfoCard(pair: Pair?, onClick: ()-> Unit) {
     if (pair == null) {
         Text("No pair information available")
         return
@@ -98,6 +100,9 @@ fun PairInfoCard(pair: Pair?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable {
+                onClick()
+            }
             .padding(8.dp),
         elevation = 4.dp
     ) {
@@ -316,4 +321,19 @@ fun TransactionCountText(modifier: Modifier = Modifier, transactionCount: TxCoun
         modifier = modifier,
         color = Color.Red,
     )
+}
+
+@Composable
+fun PaymentStatusCard(modifier: Modifier = Modifier, paymentStatus: PaymentStatusDto) {
+    Card(modifier = Modifier.fillMaxWidth().padding(8.dp), elevation = 8.dp) {
+        Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(paymentStatus.status)
+                Text(paymentStatus.type)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                Text(formatUnixTimestamp(paymentStatus.paymentTimestamp))
+            }
+        }
+    }
 }
