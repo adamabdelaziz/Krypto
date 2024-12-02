@@ -176,11 +176,14 @@ class ScannerRepositoryImpl(
         }
     }
 
+    //Uses pair address from other pair endpoint
     override suspend fun getDexPairsByChainAndAddress(chainId: String, tokenAddress: String) {
         withContext(Dispatchers.IO) {
             try {
                 val response = api.getPairsByAddress(chainId, tokenAddress)
-                //TODO this was always null
+                val currentMap = _latestDexPairs.value.toMutableMap()
+                currentMap[TokenCategory.LATEST_BOOSTED] = response?.pairs ?: listOf()
+                _latestDexPairs.value = currentMap
             } catch (e: Exception) {
                 Logger.d(e.message ?: " Null Error Message for getDexPairsByTokenAddress()")
             }

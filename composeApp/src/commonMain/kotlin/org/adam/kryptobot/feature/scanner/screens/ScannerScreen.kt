@@ -71,23 +71,13 @@ class ScannerScreen : Screen {
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth()) {
-                LazyColumn(modifier = Modifier.fillMaxWidth(0.80f)) {
-                    items(state.latestDexPairs) { pair ->
-                        PairInfoCard(pair = pair, onClick = {
-                            onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
-                        })
-                    }
-                }
-                if (state.currentPaymentStatus.isNotEmpty()) {
-                    LazyColumn(modifier = Modifier.fillMaxWidth(0.80f)) {
-                        items(state.currentPaymentStatus) { status ->
-                            PaymentStatusCard(paymentStatus = status)
-                        }
-                    }
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                items(state.latestDexPairs) { pair ->
+                    PairInfoCard(pair = pair, onClick = {
+                        onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
+                    })
                 }
             }
-
         }
     }
 }

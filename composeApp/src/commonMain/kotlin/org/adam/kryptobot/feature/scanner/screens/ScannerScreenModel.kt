@@ -74,7 +74,7 @@ class ScannerScreenModel(
                 val tokenAddress = event.pair.baseToken?.address ?: ""
                 val pairAddress = event.pair.pairAddress ?: ""
                 monitorOrders(chainId, tokenAddress)
-                monitorTokenAddress(chainId, pairAddress)
+                //monitorTokenAddress(chainId, pairAddress)
             }
 
             is ScannerScreenEvent.OnTokenCategorySelected -> {
@@ -195,6 +195,8 @@ class ScannerScreenModel(
         monitorTokenAddressJob?.cancelAndNull()
         tokenScanJob?.cancelAndNull()
         boostedTokenScanJob?.cancelAndNull()
+        monitorTokenAddressJobTwo?.cancelAndNull()
+        monitorOrderJob?.cancelAndNull()
     }
 
     companion object {
