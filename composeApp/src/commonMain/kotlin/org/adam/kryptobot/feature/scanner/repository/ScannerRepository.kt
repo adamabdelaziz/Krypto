@@ -27,7 +27,7 @@ interface ScannerRepository {
     val latestBoostedTokens: StateFlow<List<BoostedTokenDto>>
     val mostActiveBoostedTokens: StateFlow<List<BoostedTokenDto>>
 
-    val latestDexPairs: StateFlow<Map<TokenCategory,List<Pair>>>
+    val latestDexPairs: StateFlow<Map<TokenCategory, List<Pair>>>
 
 }
 
@@ -62,13 +62,14 @@ class ScannerRepositoryImpl(
             started = SharingStarted.WhileSubscribed(5000),
         )
 
-    private val _latestDexPairs: MutableStateFlow<Map<TokenCategory,List<Pair>>> =
+    private val _latestDexPairs: MutableStateFlow<Map<TokenCategory, List<Pair>>> =
         MutableStateFlow(mapOf())
-    override val latestDexPairs: StateFlow<Map<TokenCategory,List<Pair>>> = _latestDexPairs.stateIn(
-        scope = stateFlowScope,
-        initialValue = _latestDexPairs.value,
-        started = SharingStarted.WhileSubscribed(5000),
-    )
+    override val latestDexPairs: StateFlow<Map<TokenCategory, List<Pair>>> =
+        _latestDexPairs.stateIn(
+            scope = stateFlowScope,
+            initialValue = _latestDexPairs.value,
+            started = SharingStarted.WhileSubscribed(5000),
+        )
 
     //TODO Consolidate with category
     override suspend fun getLatestTokens() {
@@ -110,34 +111,49 @@ class ScannerRepositoryImpl(
     override suspend fun getDexPairsByAddressList(category: TokenCategory) {
         withContext(Dispatchers.IO) {
             try {
-                val addresses = when(category) {
-                    TokenCategory.LATEST_BOOSTED -> _latestBoostedTokens.value
-                    TokenCategory.MOST_ACTIVE_BOOSTED -> _mostActiveBoostedTokens.value
-                    TokenCategory.LATEST -> _latestTokens.value
+                val addresses = when (category) {
+                    TokenCategory.LATEST -> {
+                        _latestTokens.value.map { it.tokenAddress }
+                    }
+                    TokenCategory.LATEST_BOOSTED -> {
+                        _latestBoostedTokens.value.map { it.tokenAddress }
+                    }
+                    else -> {
+                        _mostActiveBoostedTokens.value.map { it.tokenAddress }
+                    }
                 }.distinct().joinToString(",")
 
-                val response = api.getPairsByTokenAddress(addresses)
+                if (addresses.isNotEmpty()) {
+                    val response = api.getPairsByTokenAddress(addresses)
 
-                response?.let {
-                    val pairs = it.pairs
-                    pairs?.let { fetchedPairs ->
-                        val pairAddresses = fetchedPairs.map { it.pairAddress }
-                        Logger.d("Fetched Pair Addresses: ${pairAddresses.size}, Distinct: ${pairAddresses.distinct().size}")
+                    response?.let {
+                        val pairs = it.pairs
+                        pairs?.let { fetchedPairs ->
+                            val pairAddresses = fetchedPairs.mapNotNull { it.pairAddress }
+                            Logger.d("Fetched Pair Addresses: ${pairAddresses.size}, Distinct: ${pairAddresses.distinct().size}")
 
-                        val currentMap = _latestDexPairs.value.toMutableMap()
-                        val oldList = currentMap[category] ?: listOf()
+                            val currentMap = _latestDexPairs.value.toMutableMap()
+                            val oldList = currentMap[category] ?: listOf()
 
-                        val existingPairs = oldList.mapNotNull { it.pairAddress }.toSet()
-                        val filteredNewPairs = fetchedPairs.filter { it.pairAddress in existingPairs }
+                            val oldPairsMap = oldList.associateBy { it.pairAddress }
 
-                        val mergedList = oldList.map { oldPair ->
-                            filteredNewPairs.find { it.pairAddress == oldPair.pairAddress } ?: oldPair
+                            val mergedList = fetchedPairs.map { newPair ->
+                                oldPairsMap[newPair.pairAddress] ?: newPair
+                            } + oldList.filterNot { oldPair ->
+                                fetchedPairs.any { it.pairAddress == oldPair.pairAddress }
+                            }.sortedBy { pair->
+                                pair.priceUsd?.toDouble()
+                            }
+
+                            Logger.d(
+                                "Old List Size: ${oldList.size}, " +
+                                        "Fetched Pairs Size: ${fetchedPairs.size}, " +
+                                        "Merged List Size: ${mergedList.size}"
+                            )
+
+                            currentMap[category] = mergedList.distinctBy { it.pairAddress }
+                            _latestDexPairs.value = currentMap
                         }
-
-                        Logger.d("Old List Size: ${oldList.size}, Filtered New List Size: ${filteredNewPairs.size}, Merged List Size: ${mergedList.size}")
-
-                        currentMap[category] = mergedList
-                        _latestDexPairs.value = currentMap
                     }
                 }
             } catch (e: Exception) {

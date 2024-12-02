@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,9 +12,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,7 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import io.kamel.core.Resource
+import io.kamel.core.getOrNull
+import io.kamel.image.asyncPainterResource
 import org.adam.kryptobot.feature.scanner.data.dto.DexPairDto
 import org.adam.kryptobot.feature.scanner.data.dto.Pair
 import org.adam.kryptobot.feature.scanner.data.dto.TxCount
@@ -93,8 +101,18 @@ fun PairInfoCard(pair: Pair?) {
             .padding(8.dp),
         elevation = 4.dp
     ) {
+//        Column(modifier = Modifier.padding(16.dp)) {
+//            val painterResource: Resource<Painter> = asyncPainterResource(pair.info?.imageUrl ?: "")
+//            painterResource.getOrNull()?.let {
+//                Image(
+//                    painter = it,
+//                    contentDescription = null,
+//                    modifier = Modifier.aspectRatio(1f).width(200.dp).height(200.dp),
+//                    contentScale = ContentScale.Crop
+//                )
+//            }
+//        }
         Column(modifier = Modifier.padding(16.dp)) {
-
             Text(
                 text = pair.dexId ?: "Unknown DEX",
                 style = MaterialTheme.typography.h6
@@ -102,7 +120,10 @@ fun PairInfoCard(pair: Pair?) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Column {
                     Text(
                         text = "Base Token: ${pair.baseToken?.name ?: "N/A"}",
@@ -139,9 +160,15 @@ fun PairInfoCard(pair: Pair?) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             text = "Metric",
                             style = MaterialTheme.typography.subtitle1,
@@ -171,7 +198,10 @@ fun PairInfoCard(pair: Pair?) {
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             text = "Volume:",
                             style = MaterialTheme.typography.body1,
@@ -201,7 +231,10 @@ fun PairInfoCard(pair: Pair?) {
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             text = "Price Change:",
                             style = MaterialTheme.typography.body1,
@@ -229,7 +262,10 @@ fun PairInfoCard(pair: Pair?) {
                         )
                     }
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             text = "Transactions:",
                             style = MaterialTheme.typography.body1,

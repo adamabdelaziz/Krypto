@@ -106,7 +106,7 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
             val response: HttpResponse =
                 client.get("${BASE_API_URL}latest/dex/pairs/${chainId}/${tokenAddress}")
             val rawResponse = response.bodyAsText()
-            Logger.d("Raw Response: $rawResponse")
+            //Logger.d("Raw Response: $rawResponse")
             if (response.status.isSuccess()) {
                 val pairs = response.body<DexPairDto>()
                 pairs

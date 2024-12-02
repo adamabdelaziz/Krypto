@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.data.dto.Token
@@ -49,7 +51,7 @@ class ScannerScreenModel(
     private var monitorTokenAddressJob: Job? = null
 
     init {
-        scanBoostedTokens()
+       // scanBoostedTokens()
     }
 
     fun onEvent(event: ScannerScreenEvent) {
@@ -137,11 +139,34 @@ class ScannerScreenModel(
         _selectedTokenCategory.value = category
         stopAllScanning()
         when (category) {
-            TokenCategory.LATEST_BOOSTED -> scanBoostedTokens()
-            TokenCategory.MOST_ACTIVE_BOOSTED -> scanMostBoostedTokens()
-            TokenCategory.LATEST -> scanTokens()
+            TokenCategory.LATEST_BOOSTED -> {
+                scanBoostedTokens()
+                screenModelScope.launch {
+                    scannerRepository.latestBoostedTokens
+                        .filter { it.isNotEmpty() }
+                        .first()
+                        .let { monitorAllTokenAddress() }
+                }
+            }
+            TokenCategory.MOST_ACTIVE_BOOSTED -> {
+                scanMostBoostedTokens()
+                screenModelScope.launch {
+                    scannerRepository.mostActiveBoostedTokens
+                        .filter { it.isNotEmpty() }
+                        .first()
+                        .let { monitorAllTokenAddress() }
+                }
+            }
+            TokenCategory.LATEST -> {
+                scanTokens()
+                screenModelScope.launch {
+                    scannerRepository.latestTokens
+                        .filter { it.isNotEmpty() }
+                        .first()
+                        .let { monitorAllTokenAddress() }
+                }
+            }
         }
-        monitorAllTokenAddress()
     }
 
     private fun stopAllScanning() {
