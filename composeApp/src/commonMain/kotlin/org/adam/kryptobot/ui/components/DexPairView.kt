@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.adam.kryptobot.feature.scanner.data.dto.DexPairDto
 import org.adam.kryptobot.feature.scanner.data.dto.Pair
+import org.adam.kryptobot.feature.scanner.data.dto.TxCount
 
 @Composable
 fun DexPairView(
@@ -123,25 +124,160 @@ fun PairInfoCard(pair: Pair?) {
                         style = MaterialTheme.typography.body2
                     )
                 }
+
+                Column {
+                    Text(
+                        text = "Price (USD): ${pair.priceUsd ?: "N/A"}",
+                        style = MaterialTheme.typography.body1
+                    )
+                    Text(
+                        text = "Liquidity (USD): ${pair.liquidity?.usd ?: "N/A"}",
+                        style = MaterialTheme.typography.body1
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Price (USD): ${pair.priceUsd ?: "N/A"}",
-                style = MaterialTheme.typography.body1
-            )
-            Text(
-                text = "Liquidity (USD): ${pair.liquidity?.usd ?: "N/A"}",
-                style = MaterialTheme.typography.body1
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            text = "Metric",
+                            style = MaterialTheme.typography.subtitle1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "5min",
+                            style = MaterialTheme.typography.subtitle1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "1hr",
+                            style = MaterialTheme.typography.subtitle1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "6hr",
+                            style = MaterialTheme.typography.subtitle1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "24hr",
+                            style = MaterialTheme.typography.subtitle1,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            text = "Volume:",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.volume?.m5 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.volume?.h1 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.volume?.h6 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.volume?.h24 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            text = "Price Change:",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.priceChange?.m5 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.priceChange?.h1 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.priceChange?.h6 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${pair.priceChange?.h24 ?: "N/A"}",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            text = "Transactions:",
+                            style = MaterialTheme.typography.body1,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TransactionCountText(
+                            transactionCount = pair.transactions?.m5,
+                            modifier = Modifier.weight(0.5f)
+                        )
+                        TransactionCountText(
+                            transactionCount = pair.transactions?.h1,
+                            modifier = Modifier.weight(0.5f)
+                        )
+                        TransactionCountText(
+                            transactionCount = pair.transactions?.h6,
+                            modifier = Modifier.weight(0.5f)
+                        )
+                        TransactionCountText(
+                            transactionCount = pair.transactions?.h24,
+                            modifier = Modifier.weight(0.5f)
+                        )
+                    }
+                }
+            }
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Pair Address: ${pair.pairAddress ?: "N/A"}",
-                style = MaterialTheme.typography.caption
-            )
+//            Text(
+//                text = "Pair Address: ${pair.pairAddress ?: "N/A"}",
+//                style = MaterialTheme.typography.caption
+//            )
         }
     }
+}
+
+@Composable
+fun TransactionCountText(modifier: Modifier = Modifier, transactionCount: TxCount?) {
+    Text(
+        text = "${transactionCount?.buys ?: "N/A"}",
+        style = MaterialTheme.typography.body1,
+        modifier = modifier.padding(end = 8.dp),
+        color = Color.Green,
+    )
+    Text(
+        text = "${transactionCount?.sells ?: "N/A"}",
+        style = MaterialTheme.typography.body1,
+        modifier = modifier,
+        color = Color.Red,
+    )
 }

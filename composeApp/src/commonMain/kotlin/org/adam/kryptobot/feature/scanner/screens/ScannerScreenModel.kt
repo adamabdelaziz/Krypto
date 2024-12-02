@@ -6,26 +6,36 @@ import cancelAndNull
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.adam.kryptobot.feature.scanner.data.dto.Token
+import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 
 class ScannerScreenModel(
     private val scannerRepository: ScannerRepository,
 ) : ScreenModel {
 
+    private val _selectedTokenCategory: MutableStateFlow<TokenCategory> =
+        MutableStateFlow(TokenCategory.LATEST)
+    val selectedCategory: StateFlow<TokenCategory> = _selectedTokenCategory
+
     val uiState: StateFlow<ScannerScreenUiState> = combine(
         scannerRepository.latestTokens,
         scannerRepository.latestBoostedTokens,
         scannerRepository.latestDexPairs,
-    ) { latestTokens, latestBoostedTokens, latestDexPairs ->
+        _selectedTokenCategory,
+    ) { latestTokens, latestBoostedTokens, latestDexPairs, selectedTokenCategory ->
+        val pairs = latestDexPairs[selectedTokenCategory] ?: listOf()
         ScannerScreenUiState(
             latestTokens = latestTokens,
             latestBoostedTokens = latestBoostedTokens,
-            latestDexPairs = latestDexPairs
+            latestDexPairs = pairs,
+            selectedTokenCategory = selectedTokenCategory
         )
     }.stateIn(
         scope = screenModelScope,
@@ -35,6 +45,7 @@ class ScannerScreenModel(
 
     private var tokenScanJob: Job? = null
     private var boostedTokenScanJob: Job? = null
+    private var mostBoostedTokenScanJob: Job? = null
     private var monitorTokenAddressJob: Job? = null
 
     init {
@@ -55,6 +66,14 @@ class ScannerScreenModel(
 
             is ScannerScreenEvent.OnTokenAddressSelected -> {
                 monitorAllTokenAddress()
+            }
+
+            is ScannerScreenEvent.OnTokenCategorySelected -> {
+                switchCategory(event.category)
+            }
+
+            ScannerScreenEvent.OnStopSelected -> {
+                stopAllScanning()
             }
         }
     }
@@ -82,7 +101,18 @@ class ScannerScreenModel(
         boostedTokenScanJob?.start()
     }
 
-    private fun monitorTokenAddress(chainId:String, tokenAddress: String) {
+    private fun scanMostBoostedTokens() {
+        mostBoostedTokenScanJob?.cancelAndNull()
+        mostBoostedTokenScanJob = screenModelScope.launch {
+            while (true) {
+                scannerRepository.getMostActiveBoostedTokens()
+                delay(SCAN_DELAY)
+            }
+        }
+        mostBoostedTokenScanJob?.start()
+    }
+
+    private fun monitorTokenAddress(chainId: String, tokenAddress: String) {
         Logger.d("monitorTokenAddress monkas $chainId $tokenAddress called")
         monitorTokenAddressJob?.cancelAndNull()
         monitorTokenAddressJob = screenModelScope.launch {
@@ -97,10 +127,27 @@ class ScannerScreenModel(
         monitorTokenAddressJob?.cancelAndNull()
         monitorTokenAddressJob = screenModelScope.launch {
             while (true) {
-                scannerRepository.getDexPairsByAddressList()
+                scannerRepository.getDexPairsByAddressList(_selectedTokenCategory.value)
                 delay(SCAN_DELAY)
             }
         }
+    }
+
+    private fun switchCategory(category: TokenCategory) {
+        _selectedTokenCategory.value = category
+        stopAllScanning()
+        when (category) {
+            TokenCategory.LATEST_BOOSTED -> scanBoostedTokens()
+            TokenCategory.MOST_ACTIVE_BOOSTED -> scanMostBoostedTokens()
+            TokenCategory.LATEST -> scanTokens()
+        }
+        monitorAllTokenAddress()
+    }
+
+    private fun stopAllScanning() {
+        monitorTokenAddressJob?.cancelAndNull()
+        tokenScanJob?.cancelAndNull()
+        boostedTokenScanJob?.cancelAndNull()
     }
 
     companion object {

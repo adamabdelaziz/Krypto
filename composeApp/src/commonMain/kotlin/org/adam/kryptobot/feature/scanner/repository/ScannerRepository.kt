@@ -10,19 +10,25 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import org.adam.kryptobot.feature.scanner.data.DexScannerApi
 import org.adam.kryptobot.feature.scanner.data.dto.BoostedTokenDto
-import org.adam.kryptobot.feature.scanner.data.dto.DexPairDto
 import org.adam.kryptobot.feature.scanner.data.dto.Pair
 import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
+import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 
 interface ScannerRepository {
     suspend fun getLatestTokens()
     suspend fun getLatestBoostedTokens()
-    suspend fun getDexPairsByAddressList() // This is supposed to be multiple comma separated token addresses
+    suspend fun getMostActiveBoostedTokens()
+
+    suspend fun getDexPairsByAddressList(category: TokenCategory) // This is supposed to be multiple comma separated token addresses
     suspend fun getDexPairsByChainAndAddress(chainId: String, tokenAddress: String)
 
+    //TODO make a wrapper for DTO and then map to TokenCategory
     val latestTokens: StateFlow<List<TokenDto>>
     val latestBoostedTokens: StateFlow<List<BoostedTokenDto>>
-    val latestDexPairs: StateFlow<List<Pair>>
+    val mostActiveBoostedTokens: StateFlow<List<BoostedTokenDto>>
+
+    val latestDexPairs: StateFlow<Map<TokenCategory,List<Pair>>>
+
 }
 
 class ScannerRepositoryImpl(
@@ -47,14 +53,24 @@ class ScannerRepositoryImpl(
             started = SharingStarted.WhileSubscribed(5000),
         )
 
-    private val _latestDexPairs: MutableStateFlow<List<Pair>> =
+    private val _mostActiveBoostedTokens: MutableStateFlow<List<BoostedTokenDto>> =
         MutableStateFlow(listOf())
-    override val latestDexPairs: StateFlow<List<Pair>> = _latestDexPairs.stateIn(
+    override val mostActiveBoostedTokens: StateFlow<List<BoostedTokenDto>> =
+        _mostActiveBoostedTokens.stateIn(
+            scope = stateFlowScope,
+            initialValue = _mostActiveBoostedTokens.value,
+            started = SharingStarted.WhileSubscribed(5000),
+        )
+
+    private val _latestDexPairs: MutableStateFlow<Map<TokenCategory,List<Pair>>> =
+        MutableStateFlow(mapOf())
+    override val latestDexPairs: StateFlow<Map<TokenCategory,List<Pair>>> = _latestDexPairs.stateIn(
         scope = stateFlowScope,
         initialValue = _latestDexPairs.value,
         started = SharingStarted.WhileSubscribed(5000),
     )
 
+    //TODO Consolidate with category
     override suspend fun getLatestTokens() {
         withContext(Dispatchers.IO) {
             try {
@@ -79,35 +95,50 @@ class ScannerRepositoryImpl(
         }
     }
 
-    override suspend fun getDexPairsByAddressList() {
+    override suspend fun getMostActiveBoostedTokens() {
         withContext(Dispatchers.IO) {
             try {
-                val boostedAddress = _latestBoostedTokens.value.map { it.tokenAddress }
-                val regularAddress = _latestTokens.value.map { it.tokenAddress }
-                val tokenAddress = (boostedAddress + regularAddress)
-                    .distinct()
-                    .joinToString(",")
-                val response = api.getPairsByTokenAddress(tokenAddress)
+                val response = api.getMostActiveBoostedTokens()
+                Logger.d("Boosted List Size is ${response.size}")
+                _mostActiveBoostedTokens.value = response
+            } catch (e: Exception) {
+                Logger.d(e.message ?: " Null Error Message for getLatestBoostedTokens()")
+            }
+        }
+    }
+
+    override suspend fun getDexPairsByAddressList(category: TokenCategory) {
+        withContext(Dispatchers.IO) {
+            try {
+                val addresses = when(category) {
+                    TokenCategory.LATEST_BOOSTED -> _latestBoostedTokens.value
+                    TokenCategory.MOST_ACTIVE_BOOSTED -> _mostActiveBoostedTokens.value
+                    TokenCategory.LATEST -> _latestTokens.value
+                }.distinct().joinToString(",")
+
+                val response = api.getPairsByTokenAddress(addresses)
+
                 response?.let {
                     val pairs = it.pairs
-                    pairs?.let {
-                        val pairAddresses = it.map { it.pairAddress }
-                        val baseAddresses = it.map { it.baseToken?.address }
-                        val quoteAddresses = it.map { it.quoteToken?.address }
+                    pairs?.let { fetchedPairs ->
+                        val pairAddresses = fetchedPairs.map { it.pairAddress }
+                        Logger.d("Fetched Pair Addresses: ${pairAddresses.size}, Distinct: ${pairAddresses.distinct().size}")
 
-                        Logger.d("Pair Addresses ${pairAddresses.size} Base Addresses ${baseAddresses.size} QuoteAddresses ${quoteAddresses.size}")
-                        Logger.d("Pair Addresses Distinct ${pairAddresses.distinct().size} Base Addresses Distinct ${baseAddresses.distinct().size} QuoteAddresses Distinct ${quoteAddresses.distinct().size}")
+                        val currentMap = _latestDexPairs.value.toMutableMap()
+                        val oldList = currentMap[category] ?: listOf()
+
+                        val existingPairs = oldList.mapNotNull { it.pairAddress }.toSet()
+                        val filteredNewPairs = fetchedPairs.filter { it.pairAddress in existingPairs }
+
+                        val mergedList = oldList.map { oldPair ->
+                            filteredNewPairs.find { it.pairAddress == oldPair.pairAddress } ?: oldPair
+                        }
+
+                        Logger.d("Old List Size: ${oldList.size}, Filtered New List Size: ${filteredNewPairs.size}, Merged List Size: ${mergedList.size}")
+
+                        currentMap[category] = mergedList
+                        _latestDexPairs.value = currentMap
                     }
-                    /*
-                        TODO:Store list of pairs based on their pair addresses as unique identifier instead of map based on token address
-                        Realistically only use the new entry if pair address already exists
-
-                     */
-                    val oldList = _latestDexPairs.value
-                    val thisList = it.pairs ?: listOf()
-                    val newList = (oldList + thisList).distinctBy { it.pairAddress }
-                    Logger.d("Old List Size ${oldList.size} this list size ${thisList.size} new disticnt list size ${newList.size}")
-                    _latestDexPairs.value = newList
                 }
             } catch (e: Exception) {
                 Logger.d(e.message ?: " Null Error Message for getDexPairsByTokenAddress()")

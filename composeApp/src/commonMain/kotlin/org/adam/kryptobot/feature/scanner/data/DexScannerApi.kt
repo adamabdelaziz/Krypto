@@ -31,7 +31,7 @@ interface DexScannerApi {
 class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
     override suspend fun getLatestTokens(): List<TokenDto> {
         return try {
-            val response: HttpResponse = client.get("${BASE_API_URL}token-profiles/latest/v1")
+            val response: HttpResponse = client.get("${BASE_API_URL}token-profiles/latest/v1?limit=50")
             val rawResponse = response.bodyAsText()
             //Logger.d("Raw Response: $rawResponse")
             if (response.status.isSuccess()) {
@@ -47,9 +47,10 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
         }
     }
 
+    //TODO consolidate these two functions
     override suspend fun getLatestBoostedTokens(): List<BoostedTokenDto> {
         return try {
-            val response: HttpResponse = client.get("${BASE_API_URL}token-boosts/latest/v1")
+            val response: HttpResponse = client.get("${BASE_API_URL}token-boosts/latest/v1?limit=50")
             val rawResponse = response.bodyAsText()
             //Logger.d("Raw Response: $rawResponse")
             if (response.status.isSuccess()) {
@@ -67,7 +68,16 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
 
     override suspend fun getMostActiveBoostedTokens(): List<BoostedTokenDto> {
         return try {
-            client.get("${BASE_API_URL}token-boosts/top/v1").body<List<BoostedTokenDto>>()
+            val response: HttpResponse = client.get("${BASE_API_URL}token-boosts/top/v1")
+            val rawResponse = response.bodyAsText()
+            //Logger.d("Raw Response: $rawResponse")
+            if (response.status.isSuccess()) {
+                val tokens = response.body<List<BoostedTokenDto>>()
+                tokens.takeIf { it.isNotEmpty() } ?: listOf()
+            } else {
+                Logger.d("Error response: ${response.status}, $rawResponse")
+                listOf()
+            }
         } catch (e: Exception) {
             Logger.d("API Exception ${e.message}")
             listOf()
@@ -114,13 +124,12 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
         return try {
             val response: HttpResponse =
                 client.get("${BASE_API_URL}latest/dex/tokens/$tokenAddress")
-            val rawJson = response.bodyAsText()
-            val formattedJson = Json { prettyPrint = true }.parseToJsonElement(rawJson).toString()
-            Logger.d("Formatted JSON:\n" +
-                    "$formattedJson")
-            println("Formatted JSON:\n$formattedJson")
-            client.get("${BASE_API_URL}latest/dex/tokens/${tokenAddress}")
-                .body<DexPairDto>()
+//            val rawJson = response.bodyAsText()
+//            val formattedJson = Json { prettyPrint = true }.parseToJsonElement(rawJson).toString()
+//            Logger.d("Formatted JSON:\n" +
+//                   "$formattedJson")
+//            println("Formatted JSON:\n$formattedJson")
+            response.body<DexPairDto>()
         } catch (e: Exception) {
             Logger.d("API Exception ${e.message}")
             null
@@ -135,8 +144,8 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
                         parameters.append("q", query)
                     }
                 }.body()
-            val rawJson = response.bodyAsText()
-            Logger.d("RawJson is $rawJson")
+//            val rawJson = response.bodyAsText()
+//            Logger.d("RawJson is $rawJson")
             response.body<DexPairDto>()
         } catch (e: Exception) {
             Logger.d("API Exception ${e.message}")

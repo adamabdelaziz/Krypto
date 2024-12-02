@@ -25,6 +25,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.ui.components.PairInfoCard
 
 class ScannerScreen : Screen {
@@ -40,16 +41,33 @@ class ScannerScreen : Screen {
 
     @Composable
     fun ScannerScreenContent(state: ScannerScreenUiState, onEvent: (ScannerScreenEvent) -> Unit) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxSize().background(Color.Gray),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
         ) {
-            Button(onClick =  {
-                onEvent(ScannerScreenEvent.OnTokenAddressSelected("", ""))
-            }, content = {
-                Text("Start")
-            })
+            Row(modifier = Modifier.padding(bottom = 8.dp)) {
+                Button(modifier = Modifier.padding(end = 8.dp), onClick = {
+                    onEvent(ScannerScreenEvent.OnTokenAddressSelected("", ""))
+                }, content = {
+                    Text("Start")
+                })
+                Button(onClick = {
+                    onEvent(ScannerScreenEvent.OnStopSelected)
+                }, content = {
+                    Text("Stop")
+                })
+            }
+
+            Row(modifier = Modifier.padding(bottom = 8.dp)) {
+                for(category in TokenCategory.entries) {
+                    Button(modifier = Modifier.padding(end = 8.dp), onClick = {
+                        onEvent(ScannerScreenEvent.OnTokenCategorySelected(category))
+                    }, content = {
+                        Text(category.toString())
+                    })
+                }
+            }
 
             LazyColumn(modifier = Modifier.fillMaxWidth(2f)) {
                 items(state.latestDexPairs) { pair ->
