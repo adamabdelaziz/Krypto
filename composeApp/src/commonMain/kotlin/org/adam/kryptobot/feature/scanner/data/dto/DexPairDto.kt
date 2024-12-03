@@ -1,23 +1,25 @@
 package org.adam.kryptobot.feature.scanner.data.dto
 
+import co.touchlab.kermit.Logger
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.adam.kryptobot.feature.scanner.data.model.DexPair
 
 @Serializable
 data class DexPairDto(
     val schemaVersion: String? = null,
-    val pairs: List<Pair>? = null,
+    val pairs: List<PairDto>? = null,
 )
 
 @Serializable
-data class Pair(
+data class PairDto(
     val chainId: String? = null,
     val dexId: String? = null,
     val url: String? = null,
     val pairAddress: String? = null,
     val labels: List<String>? = null,
-    val baseToken: Token? = null,
-    val quoteToken: Token? = null,
+    val baseToken: TokenDto? = null,
+    val quoteToken: TokenDto? = null,
     val priceNative: String? = null,
     val priceUsd: String? = null,
     val liquidity: Liquidity? = null,
@@ -30,6 +32,53 @@ data class Pair(
     val info: Info? = null,
     val boosts: Boosts? = null
 )
+
+fun PairDto.toDexPair(oldList: List<DexPair>): DexPair {
+    val oldOne = oldList.firstOrNull { it.pairAddress == this.pairAddress }
+
+    val priceChangeSinceScanned = if (oldOne != null) {
+        val oldPriceNative = oldOne.priceNative?.toDoubleOrNull()
+        val newPriceNative = this.priceNative?.toDoubleOrNull()
+        if (oldPriceNative != newPriceNative) {
+            Logger.d("Old $oldPriceNative new $newPriceNative")
+        }
+
+        val priceChangePercentage =
+            if (oldPriceNative != null && newPriceNative != null && oldPriceNative != 0.0) {
+                ((newPriceNative - oldPriceNative) / oldPriceNative) * 100
+            } else {
+                0.0
+            }
+        val debugString = String.format("%.12f", priceChangePercentage)
+        Logger.d("Percentage $debugString ")
+        priceChangePercentage
+    } else {
+        0.0
+    }
+
+    return DexPair(
+        chainId = chainId,
+        dexId = dexId,
+        url = url,
+        pairAddress = pairAddress,
+        labels = labels,
+        baseToken = baseToken,
+        quoteToken = quoteToken,
+        priceNative = priceNative,
+        priceUsd = priceUsd,
+        liquidity = liquidity,
+        transactions = transactions,
+        volume = volume,
+        priceChange = priceChange,
+        fdv = fdv,
+        marketCap = marketCap,
+        pairCreatedAt = pairCreatedAt,
+        info = info,
+        boosts = boosts,
+        priceChangeSinceScanned = priceChangeSinceScanned,
+    )
+}
+
 
 @Serializable
 data class Transactions(
@@ -62,7 +111,7 @@ data class PriceChange(
 )
 
 @Serializable
-data class Token(
+data class TokenDto(
     val address: String? = null,
     val name: String? = null,
     val symbol: String? = null

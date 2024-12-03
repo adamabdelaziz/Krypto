@@ -22,7 +22,7 @@ class ScannerScreenModel(
 ) : ScreenModel {
 
     private val _selectedTokenCategory: MutableStateFlow<TokenCategory> =
-        MutableStateFlow(TokenCategory.LATEST)
+        MutableStateFlow(TokenCategory.MOST_ACTIVE_BOOSTED)
     val selectedCategory: StateFlow<TokenCategory> = _selectedTokenCategory
 
     val uiState: StateFlow<ScannerScreenUiState> = combine(

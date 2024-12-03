@@ -7,14 +7,13 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
-import kotlinx.serialization.json.Json
 import org.adam.kryptobot.feature.scanner.data.dto.BoostedTokenDto
 import org.adam.kryptobot.feature.scanner.data.dto.DexPairDto
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
-import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
+import org.adam.kryptobot.feature.scanner.data.dto.LatestTokenDto
 
 interface DexScannerApi {
-    suspend fun getLatestTokens(): List<TokenDto>
+    suspend fun getLatestTokens(): List<LatestTokenDto>
     suspend fun getLatestBoostedTokens(): List<BoostedTokenDto>
     suspend fun getMostActiveBoostedTokens(): List<BoostedTokenDto>
 
@@ -29,14 +28,14 @@ interface DexScannerApi {
 }
 
 class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
-    override suspend fun getLatestTokens(): List<TokenDto> {
+    override suspend fun getLatestTokens(): List<LatestTokenDto> {
         return try {
             val response: HttpResponse =
                 client.get("${BASE_API_URL}token-profiles/latest/v1?limit=50")
             val rawResponse = response.bodyAsText()
             //Logger.d("Raw Response: $rawResponse")
             if (response.status.isSuccess()) {
-                val tokens = response.body<List<TokenDto>>()
+                val tokens = response.body<List<LatestTokenDto>>()
                 tokens.takeIf { it.isNotEmpty() } ?: listOf()
             } else {
                 Logger.d("Error response: ${response.status}, $rawResponse")
