@@ -29,4 +29,5 @@ data class DexPair(
     val info: Info? = null,
     val boosts: Boosts? = null,
     val priceChangeSinceScanned: Double  = 0.000000000000000,
+    val initialPriceNative: String? = null, //TODO Likely dont do this and just store initial of each unique pair
 )

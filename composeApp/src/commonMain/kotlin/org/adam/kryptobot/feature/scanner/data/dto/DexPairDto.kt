@@ -36,22 +36,16 @@ data class PairDto(
 fun PairDto.toDexPair(oldList: List<DexPair>): DexPair {
     val oldOne = oldList.firstOrNull { it.pairAddress == this.pairAddress }
 
-    val priceChangeSinceScanned = if (oldOne != null) {
-        val oldPriceNative = oldOne.priceNative?.toDoubleOrNull()
-        val newPriceNative = this.priceNative?.toDoubleOrNull()
-        if (oldPriceNative != newPriceNative) {
-            Logger.d("Old $oldPriceNative new $newPriceNative")
-        }
+    val initialPriceNative = oldOne?.initialPriceNative?.toDoubleOrNull()
+        ?: this.priceNative?.toDoubleOrNull()
 
-        val priceChangePercentage =
-            if (oldPriceNative != null && newPriceNative != null && oldPriceNative != 0.0) {
-                ((newPriceNative - oldPriceNative) / oldPriceNative) * 100
-            } else {
-                0.0
-            }
-        val debugString = String.format("%.12f", priceChangePercentage)
-        Logger.d("Percentage $debugString ")
-        priceChangePercentage
+    val priceChangeSinceScanned = if (initialPriceNative != null) {
+        val newPriceNative = this.priceNative?.toDoubleOrNull()
+        if (newPriceNative != null && initialPriceNative != 0.0) {
+            ((newPriceNative - initialPriceNative) / initialPriceNative) * 100
+        } else {
+            0.0
+        }
     } else {
         0.0
     }
@@ -76,6 +70,7 @@ fun PairDto.toDexPair(oldList: List<DexPair>): DexPair {
         info = info,
         boosts = boosts,
         priceChangeSinceScanned = priceChangeSinceScanned,
+        initialPriceNative = oldOne?.initialPriceNative ?: this.priceNative
     )
 }
 

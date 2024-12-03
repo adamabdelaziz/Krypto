@@ -200,6 +200,6 @@ class ScannerScreenModel(
     }
 
     companion object {
-        private const val SCAN_DELAY = 15000L
+        private const val SCAN_DELAY = 5000L
     }
 }
