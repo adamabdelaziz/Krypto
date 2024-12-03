@@ -85,6 +85,8 @@ class ScannerRepositoryImpl(
             started = SharingStarted.WhileSubscribed(5000),
         )
 
+    private val initialPairs: MutableMap<String, DexPair> = mutableMapOf()
+
     //TODO Consolidate with category
     override suspend fun getLatestTokens() {
         withContext(Dispatchers.IO) {
@@ -145,55 +147,24 @@ class ScannerRepositoryImpl(
                     response?.let {
                         val currentMap = _latestDexPairs.value.toMutableMap()
                         val oldList = currentMap[category] ?: listOf()
-                        val pairs = it.pairs?.map { it.toDexPair(oldList) }
+
+                        //Mapping and logic goes here.
+                        val pairs = it.pairs?.map { it.toDexPair(oldList, initialPairs.values.toList()) }
+
                         pairs?.let { fetchedPairs ->
-                            val pairAddresses = fetchedPairs.mapNotNull { it.pairAddress }
-                            Logger.d("Fetched Pair Addresses: ${pairAddresses.size}, Distinct: ${pairAddresses.distinct().size}")
-
-//                            val updatedPairs = fetchedPairs.map { pair ->
-//                                val oldOne =
-//                                    oldList.firstOrNull { it.pairAddress == pair.pairAddress }
-//                                if (oldOne != null) {
-//                                    val oldPriceNative = oldOne.priceNative?.toDoubleOrNull()
-//                                    val newPriceNative = pair.priceNative?.toDoubleOrNull()
-//                                    if (oldPriceNative != newPriceNative) {
-//                                        Logger.d("Old $oldPriceNative new $newPriceNative")
-//                                    }
-//
-//                                    val priceChangePercentage =
-//                                        if (oldPriceNative != null && newPriceNative != null && oldPriceNative != 0.0) {
-//                                            ((newPriceNative - oldPriceNative) / oldPriceNative) * 100
-//                                        } else {
-//                                            0.0
-//                                        }
-//                                    val debugString = String.format("%.12f", priceChangePercentage)
-//                                    Logger.d("Percentage $debugString $category")
-//                                    pair.copy(priceChangeSinceScanned = 420.0)
-//                                } else {
-//                                    pair
-//                                }
-//                            }
-                            val oldPairsMap = oldList.associateBy { it.pairAddress }
-
-                            //This sucks replace this block
-//                            val mergedList = fetchedPairs.map { newPair ->
-//                                oldPairsMap[newPair.pairAddress] ?: newPair
-//                            } + oldList.filterNot { oldPair ->
-//                                fetchedPairs.any { it.pairAddress == oldPair.pairAddress }
-//                            }.sortedBy { pair ->
-//                                pair.priceUsd?.toDouble()
-//                            }
-
-                            Logger.d(
-                                "Old List Size: ${oldList.size}, " +
-                                        "Fetched Pairs Size: ${fetchedPairs.size}, "
-                                      //  "Merged List Size: ${mergedList.size}"
-                            )
+                            pairs.forEach { pair ->
+                                pair.pairAddress?.let {
+                                    if (!initialPairs.containsKey(pair.pairAddress)) {
+                                        initialPairs[pair.pairAddress] = pair
+                                    }
+                                }
+                            }
 
                             currentMap[category] =
                                 fetchedPairs.distinctBy { it.pairAddress }.sortedBy { pair ->
                                     pair.priceChangeSinceScanned
                                 }.reversed()
+
                             _latestDexPairs.value = currentMap.toMap()
                         }
                     }

@@ -111,15 +111,26 @@ fun PairInfoCard(pair: DexPair?, onClick: ()-> Unit) {
 //            }
 //        }
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = pair.dexId ?: "Unknown DEX",
-                style = MaterialTheme.typography.h6
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = pair.dexId ?: "Unknown DEX",
+                    style = MaterialTheme.typography.h6
+                )
 
-            Text(
-                text = String.format("%.12f", pair.priceChangeSinceScanned),
-                style = MaterialTheme.typography.h6
-            )
+                Text(
+                    text = String.format("%.12f", pair.priceChangeSinceScanned),
+                    style = MaterialTheme.typography.h6
+                )
+
+                Text(
+                    text = String.format("%.12f", pair.recentPriceChangeSinceScanned),
+                    style = MaterialTheme.typography.h6
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(

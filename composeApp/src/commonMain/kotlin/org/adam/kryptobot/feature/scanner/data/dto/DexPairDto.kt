@@ -33,10 +33,14 @@ data class PairDto(
     val boosts: Boosts? = null
 )
 
-fun PairDto.toDexPair(oldList: List<DexPair>): DexPair {
+fun PairDto.toDexPair(oldList: List<DexPair>, initialList: List<DexPair>): DexPair {
     val oldOne = oldList.firstOrNull { it.pairAddress == this.pairAddress }
+    val initialPair = initialList.firstOrNull { it.pairAddress == this.pairAddress }
 
-    val initialPriceNative = oldOne?.initialPriceNative?.toDoubleOrNull()
+    val initialPriceNative = initialPair?.priceNative?.toDoubleOrNull()
+        ?: this.priceNative?.toDoubleOrNull()
+
+    val recentPriceNative = oldOne?.priceNative?.toDoubleOrNull()
         ?: this.priceNative?.toDoubleOrNull()
 
     val priceChangeSinceScanned = if (initialPriceNative != null) {
@@ -49,7 +53,16 @@ fun PairDto.toDexPair(oldList: List<DexPair>): DexPair {
     } else {
         0.0
     }
-
+    val recentPriceChangeSinceScanned = if (recentPriceNative != null) {
+        val newPriceNative = this.priceNative?.toDoubleOrNull()
+        if (newPriceNative != null && recentPriceNative != 0.0) {
+            ((newPriceNative - recentPriceNative) / recentPriceNative) * 100
+        } else {
+            0.0
+        }
+    } else {
+        0.0
+    }
     return DexPair(
         chainId = chainId,
         dexId = dexId,
@@ -70,7 +83,7 @@ fun PairDto.toDexPair(oldList: List<DexPair>): DexPair {
         info = info,
         boosts = boosts,
         priceChangeSinceScanned = priceChangeSinceScanned,
-        initialPriceNative = oldOne?.initialPriceNative ?: this.priceNative
+        recentPriceChangeSinceScanned = recentPriceChangeSinceScanned
     )
 }
 
