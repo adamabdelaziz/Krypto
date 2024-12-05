@@ -27,11 +27,21 @@ interface DexScannerApi {
     suspend fun searchForPairs(query: String): DexPairDto?
 }
 
+/*
+    Check these with various endpoints(doesnt seem to do anything for latest tokens) and search endpoint
+    ?rankBy=trendingScoreH6&order=desc&minLiq=100000
+ */
 class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
     override suspend fun getLatestTokens(): List<LatestTokenDto> {
         return try {
             val response: HttpResponse =
-                client.get("${BASE_API_URL}token-profiles/latest/v1?limit=50")
+                client.get("${BASE_API_URL}token-profiles/latest/v1") {
+                    url {
+                        parameters.append("rankBy", "trendingScoreH6")
+                        parameters.append("order", "desc")
+                        parameters.append("minLiq", "100,000")
+                    }
+                }
             val rawResponse = response.bodyAsText()
             //Logger.d("Raw Response: $rawResponse")
             if (response.status.isSuccess()) {

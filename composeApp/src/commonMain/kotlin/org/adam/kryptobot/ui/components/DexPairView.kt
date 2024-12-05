@@ -34,57 +34,11 @@ import org.adam.kryptobot.feature.scanner.data.dto.PairDto
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
 import org.adam.kryptobot.feature.scanner.data.dto.TxCount
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
+import org.adam.kryptobot.util.formatToDollarString
 import org.adam.kryptobot.util.formatUnixTimestamp
 
 @Composable
-fun DexPairView(
-    headerText: String,
-    dexPair: DexPairDto,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val transitionState = updateTransition(targetState = expanded, label = "Expand Transition")
-    val columnHeight by transitionState.animateDp(
-        transitionSpec = { spring(stiffness = Spring.StiffnessLow) },
-        label = "Height Animation"
-    ) {
-        if (it) 200.dp else 0.dp
-    }
-
-    Column(
-        modifier = modifier
-            .padding(8.dp)
-            .background(Color.LightGray, shape = RoundedCornerShape(8.dp))
-            .clickable { expanded = !expanded }
-    ) {
-        Text(
-            text = headerText,
-            style = MaterialTheme.typography.h6,
-            modifier = Modifier.padding(16.dp)
-        )
-
-        Box(
-            modifier = Modifier
-                .clipToBounds()
-                .height(columnHeight)
-        ) {
-            LazyColumn {
-                dexPair.pairs?.let {
-                    items(it) { pair ->
-                        Text(
-                            text = pair.liquidity?.usd.toString(),
-                            modifier = Modifier.padding(8.dp),
-                            style = MaterialTheme.typography.body1
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PairInfoCard(pair: DexPair?, onClick: ()-> Unit) {
+fun PairInfoCard(pair: DexPair?, onClick: () -> Unit) {
     if (pair == null) {
         Text("No pair information available")
         return
@@ -121,12 +75,12 @@ fun PairInfoCard(pair: DexPair?, onClick: ()-> Unit) {
                 )
 
                 Text(
-                    text = String.format("%.12f", pair.priceChangeSinceScanned),
+                    text = "${String.format("%.4f", pair.priceChangeSinceScanned)}%",
                     style = MaterialTheme.typography.h6
                 )
 
                 Text(
-                    text = String.format("%.12f", pair.recentPriceChangeSinceScanned),
+                    text = "${String.format("%.4f", pair.recentPriceChangeSinceScanned)}%",
                     style = MaterialTheme.typography.h6
                 )
             }
@@ -164,11 +118,32 @@ fun PairInfoCard(pair: DexPair?, onClick: ()-> Unit) {
                         text = "Price (USD): ${pair.priceUsd ?: "N/A"}",
                         style = MaterialTheme.typography.body1
                     )
+
                     Text(
-                        text = "Liquidity (USD): ${pair.liquidity?.usd ?: "N/A"}",
+                        text = "Liquidity (USD): ${pair.liquidity?.usd?.formatToDollarString() ?: "N/A"}",
                         style = MaterialTheme.typography.body1
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Market Cap: ${pair.marketCap?.formatToDollarString() ?: "N/A"}",
+                    style = MaterialTheme.typography.body1
+                )
+                Text(
+                    text = "Ratio: ${String.format("%.4f", pair.liquidityMarketRatio)}%",
+                    style = MaterialTheme.typography.body1
+                )
+                Text(
+                    text = "FDV: ${pair.fdv?.formatToDollarString() ?: "N/A"}",
+                    style = MaterialTheme.typography.body1
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -268,6 +243,7 @@ fun PairInfoCard(pair: DexPair?, onClick: ()-> Unit) {
                             style = MaterialTheme.typography.body1,
                             modifier = Modifier.weight(1f)
                         )
+
                         Text(
                             text = "${pair.priceChange?.h24 ?: "N/A"}",
                             style = MaterialTheme.typography.body1,
@@ -335,7 +311,10 @@ fun TransactionCountText(modifier: Modifier = Modifier, transactionCount: TxCoun
 fun PaymentStatusCard(modifier: Modifier = Modifier, paymentStatus: PaymentStatusDto) {
     Card(modifier = Modifier.fillMaxWidth().padding(8.dp), elevation = 8.dp) {
         Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(paymentStatus.status)
                 Text(paymentStatus.type)
             }

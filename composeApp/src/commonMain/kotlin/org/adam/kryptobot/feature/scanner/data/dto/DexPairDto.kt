@@ -4,6 +4,8 @@ import co.touchlab.kermit.Logger
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
+import java.math.BigDecimal
+import java.text.DecimalFormat
 
 @Serializable
 data class DexPairDto(
@@ -53,6 +55,7 @@ fun PairDto.toDexPair(oldList: List<DexPair>, initialList: List<DexPair>): DexPa
     } else {
         0.0
     }
+
     val recentPriceChangeSinceScanned = if (recentPriceNative != null) {
         val newPriceNative = this.priceNative?.toDoubleOrNull()
         if (newPriceNative != null && recentPriceNative != 0.0) {
@@ -63,6 +66,16 @@ fun PairDto.toDexPair(oldList: List<DexPair>, initialList: List<DexPair>): DexPa
     } else {
         0.0
     }
+
+    //Base address used with RugChecker
+    Logger.d("Base: ${this.baseToken?.address}")
+
+    val ratio = this.liquidity?.usd?.let { usd->
+        this.marketCap?.let { marketCap ->
+            (usd.div(marketCap)).times(100)
+        }
+    } ?: 0.0
+
     return DexPair(
         chainId = chainId,
         dexId = dexId,
@@ -83,7 +96,9 @@ fun PairDto.toDexPair(oldList: List<DexPair>, initialList: List<DexPair>): DexPa
         info = info,
         boosts = boosts,
         priceChangeSinceScanned = priceChangeSinceScanned,
-        recentPriceChangeSinceScanned = recentPriceChangeSinceScanned
+        recentPriceChangeSinceScanned = recentPriceChangeSinceScanned,
+        beingTracked = oldOne?.beingTracked ?: false,
+        liquidityMarketRatio = ratio,
     )
 }
 

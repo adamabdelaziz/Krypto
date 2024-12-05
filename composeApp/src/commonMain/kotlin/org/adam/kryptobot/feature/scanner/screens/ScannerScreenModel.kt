@@ -92,7 +92,7 @@ class ScannerScreenModel(
         tokenScanJob?.cancelAndNull()
         tokenScanJob = screenModelScope.launch {
             while (true) {
-                scannerRepository.getLatestTokens()
+                scannerRepository.getTokens(TokenCategory.LATEST)
                 delay(SCAN_DELAY)
             }
         }
@@ -103,7 +103,7 @@ class ScannerScreenModel(
         boostedTokenScanJob?.cancelAndNull()
         boostedTokenScanJob = screenModelScope.launch {
             while (true) {
-                scannerRepository.getLatestBoostedTokens()
+                scannerRepository.getTokens(TokenCategory.LATEST_BOOSTED)
                 delay(SCAN_DELAY)
             }
         }
@@ -114,7 +114,7 @@ class ScannerScreenModel(
         mostBoostedTokenScanJob?.cancelAndNull()
         mostBoostedTokenScanJob = screenModelScope.launch {
             while (true) {
-                scannerRepository.getMostActiveBoostedTokens()
+                scannerRepository.getTokens(TokenCategory.MOST_ACTIVE_BOOSTED)
                 delay(SCAN_DELAY)
             }
         }
@@ -162,7 +162,7 @@ class ScannerScreenModel(
             TokenCategory.LATEST_BOOSTED -> {
                 scanBoostedTokens()
                 screenModelScope.launch {
-                    scannerRepository.latestBoostedTokens
+                    scannerRepository.tokens
                         .filter { it.isNotEmpty() }
                         .first()
                         .let { monitorAllTokenAddress() }
@@ -172,7 +172,7 @@ class ScannerScreenModel(
             TokenCategory.MOST_ACTIVE_BOOSTED -> {
                 scanMostBoostedTokens()
                 screenModelScope.launch {
-                    scannerRepository.mostActiveBoostedTokens
+                    scannerRepository.tokens
                         .filter { it.isNotEmpty() }
                         .first()
                         .let { monitorAllTokenAddress() }
@@ -182,11 +182,16 @@ class ScannerScreenModel(
             TokenCategory.LATEST -> {
                 scanTokens()
                 screenModelScope.launch {
-                    scannerRepository.latestTokens
+                    scannerRepository.tokens
                         .filter { it.isNotEmpty() }
                         .first()
                         .let { monitorAllTokenAddress() }
                 }
+            }
+
+            TokenCategory.TRACKED -> {
+                stopAllScanning()
+                monitorAllTokenAddress()
             }
         }
     }

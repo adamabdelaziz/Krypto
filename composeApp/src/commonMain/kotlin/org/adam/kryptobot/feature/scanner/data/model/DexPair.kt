@@ -30,4 +30,6 @@ data class DexPair(
     val boosts: Boosts? = null,
     val priceChangeSinceScanned: Double  = 0.000000000000000,
     val recentPriceChangeSinceScanned: Double = 0.000000000000000,
+    val beingTracked: Boolean = false,
+    val liquidityMarketRatio: Double = 0.0,
 )
