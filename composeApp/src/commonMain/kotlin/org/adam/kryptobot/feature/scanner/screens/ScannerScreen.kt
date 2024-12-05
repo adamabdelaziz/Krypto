@@ -44,7 +44,7 @@ class ScannerScreen : Screen {
     @Composable
     fun ScannerScreenContent(state: ScannerScreenUiState, onEvent: (ScannerScreenEvent) -> Unit) {
         Column(
-            modifier = Modifier.fillMaxSize().background(Color.Gray),
+            modifier = Modifier.fillMaxSize().background(Color.Gray).padding(bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
