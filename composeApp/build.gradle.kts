@@ -66,6 +66,7 @@ kotlin {
 
                 implementation(libs.apollo.runtime)
                 implementation(libs.roboquant)
+                implementation(libs.sol4k)
             }
         }
 
@@ -84,18 +85,17 @@ kotlin {
             }
         }
 
+        val androidMain by getting {
+            dependencies {
+                implementation(compose.preview)
+                implementation(libs.androidx.activity.compose)
 
-            val androidMain by getting {
-                dependencies {
-                    implementation(compose.preview)
-                    implementation(libs.androidx.activity.compose)
-
-                    implementation(libs.ktor.client.okhttp)
-                    implementation(libs.koin.android)
-                    implementation(libs.koin.androidx.compose)
-                }
+                implementation(libs.ktor.client.okhttp)
+                implementation(libs.koin.android)
+                implementation(libs.koin.androidx.compose)
             }
-        
+        }
+
         if (enableDesktop) {
             val desktopMain by getting {
                 dependencies {

@@ -29,6 +29,7 @@ lifecycleRuntimeComposeDesktop = "2.8.6"
 roboquant = "2.2.0"
 kermit = "2.0.5"
 activityKtx = "1.9.3"
+sol4k= "0.5.4"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -45,10 +46,12 @@ androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", nam
 androidx-lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 
-kamel = { module = "media.kamel:kamel-image", version.ref = "kamel" }
 apollo-runtime = { module = "com.apollographql.apollo3:apollo-runtime", version.ref = "apolloRuntime" }
 androidx-lifecycle-runtime-compose-desktop = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose-desktop", version.ref = "lifecycleRuntimeComposeDesktop" }
+
+kamel = { module = "media.kamel:kamel-image", version.ref = "kamel" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit"}
+sol4k = { module = "org.sol4k:sol4k", version.ref = "sol4k"}
 
 # Roboquant
 roboquant = { module = "org.roboquant:roboquant", version.ref = "roboquant"}
