@@ -1,5 +1,6 @@
 package org.adam.kryptobot.feature.swapper.data
 
+import co.touchlab.kermit.Logger
 import org.sol4k.Base58
 import org.sol4k.Connection
 import org.sol4k.Keypair
@@ -46,9 +47,9 @@ class Sol4kApi {
 
         try {
             val transactionSignature = solanaClient.sendTransaction(transaction)
-            println("Transaction successfully sent! Signature: $transactionSignature")
+            Logger.d("Transaction successfully sent! Signature: $transactionSignature")
         } catch (e: Exception) {
-            println("Transaction failed: ${e.message}")
+            Logger.d("Transaction failed: ${e.message}")
         }
     }
 }

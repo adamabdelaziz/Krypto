@@ -148,7 +148,6 @@ class KtorDexScannerApi(private val client: HttpClient) : DexScannerApi {
 //            val formattedJson = Json { prettyPrint = true }.parseToJsonElement(rawJson).toString()
 //            Logger.d("Formatted JSON:\n" +
 //                   "$formattedJson")
-//            println("Formatted JSON:\n$formattedJson")
             response.body<DexPairDto>()
         } catch (e: Exception) {
             Logger.d("API Exception ${e.message}")
