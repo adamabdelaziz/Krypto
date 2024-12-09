@@ -68,7 +68,7 @@ fun PairDto.toDexPair(oldList: List<DexPair>, initialList: List<DexPair>): DexPa
     }
 
     //Base address used with RugChecker
-    Logger.d("Base: ${this.baseToken?.address}")
+    //Logger.d("Base: ${this.baseToken?.address}")
 
     val ratio = this.liquidity?.usd?.let { usd->
         this.marketCap?.let { marketCap ->

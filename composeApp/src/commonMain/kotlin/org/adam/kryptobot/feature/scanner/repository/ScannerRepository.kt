@@ -27,6 +27,8 @@ interface ScannerRepository {
     suspend fun getDexPairsByChainAndAddress(chainId: String, tokenAddress: String)
     suspend fun getOrdersPaidFor(chainId: String, tokenAddress: String)
 
+    fun trackPair(dexPair: DexPair)
+
     //TODO make a wrapper for DTO and then map to TokenCategory
     val latestTokens: StateFlow<List<LatestTokenDto>>
     val latestBoostedTokens: StateFlow<List<BoostedTokenDto>>
@@ -224,5 +226,18 @@ class ScannerRepositoryImpl(
                 Logger.d(e.message ?: " Null Error Message for getDexPairsByTokenAddress()")
             }
         }
+    }
+
+    override fun trackPair(dexPair: DexPair) {
+        val updatedMap = _latestDexPairs.value.mapValues { (_, pairs) ->
+            pairs.map { pair ->
+                if (pair.pairAddress == dexPair.pairAddress) {
+                    pair.copy(beingTracked = true)
+                } else {
+                    pair
+                }
+            }
+        }
+        _latestDexPairs.value = updatedMap
     }
 }

@@ -12,3 +12,4 @@ fun BigDecimal.formatToDollarString(): String {
     val formatter = NumberFormat.getCurrencyInstance(Locale.US)
     return formatter.format(this)
 }
+

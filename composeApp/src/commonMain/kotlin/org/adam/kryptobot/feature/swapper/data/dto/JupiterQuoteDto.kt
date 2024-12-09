@@ -15,19 +15,20 @@ data class JupiterQuoteDto(
     val priceImpactPct: String,
     val routePlan: List<RoutePlanDto>,
     val contextSlot: Long,
-    val timeTaken: Long
+    val scoreReport: String? = null,
+    val timeTaken: Double
 )
 
 @Serializable
 data class PlatformFeeDto(
     val amount: String,
-    val feeBps: Int
+    val feeBps: Long
 )
 
 @Serializable
 data class RoutePlanDto(
     val swapInfo: SwapInfoDto,
-    val percent: Int
+    val percent: Double
 )
 
 @Serializable

@@ -18,6 +18,7 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import org.adam.kryptobot.navigation.tabs.ScannerTab
+import org.adam.kryptobot.navigation.tabs.SwapperTab
 
 @Composable
 fun BottomNavScaffold() {
@@ -29,6 +30,7 @@ fun BottomNavScaffold() {
              */
             BottomNavigation(backgroundColor = Color.Black, elevation = 32.dp) {
                 TabNavigationItem(ScannerTab)
+                TabNavigationItem(SwapperTab)
             }
         },
         content = { CurrentTab() },

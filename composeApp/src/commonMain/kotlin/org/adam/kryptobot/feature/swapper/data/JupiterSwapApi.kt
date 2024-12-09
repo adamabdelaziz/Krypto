@@ -18,6 +18,7 @@ import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapWrapperDto
+import kotlin.math.pow
 
 // download jupiter wallet
 
@@ -113,14 +114,15 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
                 url.parameters.appendAll(queryParams)
             }
             val text = response.bodyAsText()
-            Logger.d(text)
-            if (response.status.isSuccess()) {
-                response.body<JupiterQuoteDto>()
-            } else {
-                null
-            }
 
+            Logger.d(text)
+            Logger.d("Quote response status ${response.status}")
+
+            val yer = response.body<JupiterQuoteDto>()
+            Logger.d("object being made is $yer")
+            yer
         } catch (e: Exception) {
+            Logger.d("API Quote exception ${e.message}")
             null
 
         }
@@ -177,5 +179,8 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
         private const val GET_QUOTE_URL = "${BASE_API_URL}quote"
         private const val POST_SWAP_URL = "${BASE_API_URL}swap"
         private const val POST_SWAP_INSTRUCTIONS_URL = "${BASE_API_URL}swap-instructions"
+
+        const val EXACT_IN = "ExactIn"
+        const val EXACT_OUT = "ExactOut"
     }
 }

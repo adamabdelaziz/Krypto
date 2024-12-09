@@ -70,11 +70,13 @@ class ScannerScreenModel(
             }
 
             is ScannerScreenEvent.OnTokenAddressSelected -> {
-                val chainId = event.pair.chainId ?: ""
-                val tokenAddress = event.pair.baseToken?.address ?: ""
-                val pairAddress = event.pair.pairAddress ?: ""
-                monitorOrders(chainId, tokenAddress)
-                //monitorTokenAddress(chainId, pairAddress)
+//                val chainId = event.pair.chainId ?: ""
+//                val tokenAddress = event.pair.baseToken?.address ?: ""
+//                val pairAddress = event.pair.pairAddress ?: ""
+//                monitorOrders(chainId, tokenAddress)
+//                monitorTokenAddress(chainId, pairAddress)
+
+                scannerRepository.trackPair(event.pair)
             }
 
             is ScannerScreenEvent.OnTokenCategorySelected -> {
