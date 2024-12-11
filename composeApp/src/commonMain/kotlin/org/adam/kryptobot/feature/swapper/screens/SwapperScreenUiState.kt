@@ -4,6 +4,6 @@ import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 
 data class SwapperScreenUiState(
-    val quote: JupiterQuoteDto? = null,
+    val quote: String? = null,
     val pair: DexPair? = null,
 )

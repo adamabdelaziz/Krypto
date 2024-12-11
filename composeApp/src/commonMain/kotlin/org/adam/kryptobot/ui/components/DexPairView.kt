@@ -38,14 +38,14 @@ import org.adam.kryptobot.util.formatToDollarString
 import org.adam.kryptobot.util.formatUnixTimestamp
 
 @Composable
-fun PairInfoCard(pair: DexPair?, onClick: () -> Unit) {
+fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPair?, onClick: () -> Unit) {
     if (pair == null) {
         Text("No pair information available")
         return
     }
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable {
                 onClick()

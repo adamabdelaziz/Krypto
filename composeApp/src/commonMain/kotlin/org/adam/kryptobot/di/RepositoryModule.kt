@@ -17,6 +17,7 @@ val repositoryModule = module {
     }
     single<SwapperRepository> {
         SwapperRepositoryImpl(
+            json = get(),
             stateFlowScope = get(named("IoScope")),
             swapApi = get(),
             solanaApi = get(),

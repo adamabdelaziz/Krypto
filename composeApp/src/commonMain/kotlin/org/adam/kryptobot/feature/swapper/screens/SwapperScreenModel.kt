@@ -42,6 +42,11 @@ class SwapperScreenModel(
                 getQuote(event.dexPair)
             }
 
+            SwapperScreenEvent.OnGenerateSwapInstructionsClicked -> {
+                screenModelScope.launch {
+                    swapperRepository.attemptSwapInstructions()
+                }
+            }
         }
     }
 

@@ -8,12 +8,18 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.adam.kryptobot.feature.swapper.data.JupiterSwapApi
 import org.adam.kryptobot.feature.swapper.data.Sol4kApi
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
+import org.adam.kryptobot.feature.swapper.data.dto.PlatformFeeDto
+import org.adam.kryptobot.feature.swapper.data.mappers.wrapped
+import org.adam.kryptobot.feature.swapper.data.mappers.wrappedTemp
 import org.adam.kryptobot.feature.swapper.data.model.Wallet
+import org.adam.kryptobot.util.MAIN_WALLET_PUBLIC_KEY
 import kotlin.math.pow
 
 interface SwapperRepository {
@@ -41,12 +47,13 @@ interface SwapperRepository {
     fun createDebugWallet()
 
     val currentWallet: StateFlow<Wallet>
-    val currentQuotes: StateFlow<JupiterQuoteDto?>
+    val currentQuotes: StateFlow<String?>
     val currentSwapInstructions: StateFlow<JupiterSwapInstructionsDto?>
     val currentSwapResponse: StateFlow<JupiterSwapResponseDto?>
 }
 
 class SwapperRepositoryImpl(
+    private val json: Json,
     private val stateFlowScope: CoroutineScope,
     private val swapApi: JupiterSwapApi,
     private val solanaApi: Sol4kApi,
@@ -65,8 +72,8 @@ class SwapperRepositoryImpl(
         started = SharingStarted.WhileSubscribed(5000),
     )
 
-    private val _currentQuote: MutableStateFlow<JupiterQuoteDto?> = MutableStateFlow(null)
-    override val currentQuotes: StateFlow<JupiterQuoteDto?> = _currentQuote.stateIn(
+    private val _currentQuote: MutableStateFlow<String?> = MutableStateFlow(null)
+    override val currentQuotes: StateFlow<String?> = _currentQuote.stateIn(
         scope = stateFlowScope,
         initialValue = _currentQuote.value,
         started = SharingStarted.WhileSubscribed(5000),
@@ -142,11 +149,47 @@ class SwapperRepositoryImpl(
         ((amount * 10.0.pow(decimals)).toLong()).toString()
 
     override suspend fun attemptSwap() {
-
+        withContext(Dispatchers.IO) {
+            try {
+                _currentQuote.value?.let {
+                    val instructions = swapApi.swapTokens(
+                        quoteResponse = it,
+                        userPublicKey = MAIN_WALLET_PUBLIC_KEY
+                    )
+                    instructions?.let {
+                        _currentSwapResponse.value = it
+                    } ?: run {
+                        Logger.d("Null instructions")
+                    }
+                } ?: run {
+                    Logger.d("Null current quote")
+                }
+            } catch (e: Exception) {
+                Logger.d("Exception getting instructions ${e.message}")
+            }
+        }
     }
 
     override suspend fun attemptSwapInstructions() {
-
+        withContext(Dispatchers.IO) {
+            try {
+                _currentQuote.value?.let {
+                    val instructions = swapApi.swapInstructions(
+                        quoteResponse = it,
+                        userPublicKey = MAIN_WALLET_PUBLIC_KEY
+                    )
+                    instructions?.let {
+                        _currentSwapInstructions.value = it
+                    } ?: run {
+                        Logger.d("Null instructions")
+                    }
+                } ?: run {
+                    Logger.d("Null current quote")
+                }
+            } catch (e: Exception) {
+                Logger.d("Exception getting instructions ${e.message}")
+            }
+        }
     }
 
     override fun createDebugWallet() {

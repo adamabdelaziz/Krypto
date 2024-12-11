@@ -39,17 +39,25 @@ class SwapperScreen : Screen {
             verticalArrangement = Arrangement.Top,
         ) {
             Button(
+                modifier = Modifier.padding(bottom = 8.dp),
                 onClick = { onEvent(SwapperScreenEvent.OnGenerateDebugWalletClicked) },
                 content = {
                     Text("Generate Debug Wallet")
                 }
             )
             state.pair?.let {
-                PairInfoCard(pair = it, onClick =  {
+                PairInfoCard(modifier = Modifier.padding(bottom = 8.dp), pair = it, onClick =  {
                     onEvent(SwapperScreenEvent.OnDexPairClicked(it))
                 })
             }
-
+            state.quote?.let {
+                Button(
+                    onClick = { onEvent(SwapperScreenEvent.OnGenerateSwapInstructionsClicked) },
+                    content = {
+                        Text("Generate Swap Instructions")
+                    }
+                )
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ import io.ktor.http.isSuccess
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
+import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapWrapDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapWrapperDto
 import kotlin.math.pow
 
@@ -39,14 +40,16 @@ interface JupiterSwapApi {
         autoSlippage: Boolean = false,
         maxAutoSlippageBps: Int? = null,
         autoSlippageCollisionUsdValue: Int? = null
-    ): JupiterQuoteDto?
+    ): String?
 
     suspend fun swapTokens(
-        wrapper: JupiterSwapWrapperDto,
+        quoteResponse: String,
+        userPublicKey: String,
     ): JupiterSwapResponseDto?
 
     suspend fun swapInstructions(
-        wrapper: JupiterSwapWrapperDto
+        quoteResponse: String,
+        userPublicKey: String,
     ): JupiterSwapInstructionsDto?
 }
 
@@ -68,7 +71,7 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
         autoSlippage: Boolean,
         maxAutoSlippageBps: Int?,
         autoSlippageCollisionUsdValue: Int?
-    ): JupiterQuoteDto? {
+    ): String? {
 
         val queryParams = Parameters.build {
             append("inputMint", inputAddress)
@@ -118,9 +121,7 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
             Logger.d(text)
             Logger.d("Quote response status ${response.status}")
 
-            val yer = response.body<JupiterQuoteDto>()
-            Logger.d("object being made is $yer")
-            yer
+            text
         } catch (e: Exception) {
             Logger.d("API Quote exception ${e.message}")
             null
@@ -129,13 +130,21 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
     }
 
     override suspend fun swapTokens(
-        wrapper: JupiterSwapWrapperDto,
+        quoteResponse: String,
+        userPublicKey: String,
     ): JupiterSwapResponseDto? {
         return try {
             val response: HttpResponse = client.post(POST_SWAP_URL) {
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
-                setBody(wrapper)
+                setBody(
+                    """
+                {
+                    "quoteResponse": $quoteResponse,
+                    "userPublicKey": "$userPublicKey"
+                }
+                """.trimIndent()
+                )
             }
 
             val text = response.bodyAsText()
@@ -147,17 +156,28 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
                 null
             }
         } catch (e: Exception) {
+            Logger.d("API Swap exception ${e.message}")
             null
 
         }
     }
 
-    override suspend fun swapInstructions(wrapper: JupiterSwapWrapperDto): JupiterSwapInstructionsDto? {
+    override suspend fun swapInstructions(
+        quoteResponse: String,
+        userPublicKey: String,
+    ): JupiterSwapInstructionsDto? {
         return try {
             val response: HttpResponse = client.post(POST_SWAP_INSTRUCTIONS_URL) {
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
-                setBody(wrapper)
+                setBody(
+                    """
+                {
+                    "quoteResponse": $quoteResponse,
+                    "userPublicKey": "$userPublicKey"
+                }
+                """.trimIndent()
+                )
             }
 
             val text = response.bodyAsText()
@@ -169,6 +189,7 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
                 null
             }
         } catch (e: Exception) {
+            Logger.d("API Swap Instructions exception ${e.message}")
             null
 
         }

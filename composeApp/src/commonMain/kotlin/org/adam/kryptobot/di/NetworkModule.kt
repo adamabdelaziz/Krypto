@@ -10,13 +10,17 @@ import org.koin.dsl.module
 
 val networkModule = module {
     single {
-        val json = Json { ignoreUnknownKeys = true }
+        Json {
+            prettyPrint = true
+            isLenient = true
+            ignoreUnknownKeys = true
+        }
+    }
+
+    single {
         HttpClient {
             install(ContentNegotiation) {
-                json(json)
-            }
-            defaultRequest {
-                header("X-Api-Key", "REPLACEME") // TODO: Some other place to put key
+                json(get())
             }
         }
     }

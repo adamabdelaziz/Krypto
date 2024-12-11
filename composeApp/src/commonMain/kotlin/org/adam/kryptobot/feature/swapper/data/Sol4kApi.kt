@@ -2,7 +2,9 @@ package org.adam.kryptobot.feature.swapper.data
 
 import androidx.compose.ui.input.key.Key
 import co.touchlab.kermit.Logger
+import org.adam.kryptobot.util.DEV_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.encodeBase58
+import org.hipparchus.analysis.function.Log
 import org.sol4k.Base58
 import org.sol4k.Connection
 import org.sol4k.Keypair
@@ -11,6 +13,8 @@ import org.sol4k.RpcUrl
 import org.sol4k.Transaction
 import org.sol4k.TransactionMessage
 import org.sol4k.api.Commitment
+import org.sol4k.api.TransactionSimulationError
+import org.sol4k.api.TransactionSimulationSuccess
 import org.sol4k.instruction.Instruction
 import java.math.BigInteger
 
@@ -33,6 +37,14 @@ class Sol4kApi {
         Logger.d("Encoded Private ${Base58.encode(privateKey)}")
     }
 
+    fun getProgramAccounts(
+        programId: String = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        rpcUrl: RpcUrl = RpcUrl.DEVNET,
+        commitment: Commitment = Commitment.CONFIRMED
+    ) {
+
+    }
+
     fun getWalletBalance(
         walletKey: String,
         rpcUrl: RpcUrl = RpcUrl.DEVNET,
@@ -47,8 +59,9 @@ class Sol4kApi {
         feePayerAddress: String,
         privateKey: String,
         instructions: List<Instruction>,
-        rpcUrl: RpcUrl = RpcUrl.DEVNET,
-        commitment: Commitment = Commitment.CONFIRMED
+        rpcUrl: RpcUrl = RpcUrl.MAINNNET,
+        commitment: Commitment = Commitment.CONFIRMED,
+        simulation: Boolean = true,
     ) {
         val solanaClient = Connection(rpcUrl, commitment)
 
@@ -64,8 +77,22 @@ class Sol4kApi {
         transaction.sign(keypair)
 
         try {
-            val transactionSignature = solanaClient.sendTransaction(transaction)
-            Logger.d("Transaction successfully sent! Signature: $transactionSignature")
+            if (simulation) {
+                when (val response = solanaClient.simulateTransaction(transaction)) {
+                    is TransactionSimulationError -> {
+                        Logger.d("Simulation error ${response.error}")
+                    }
+
+                    is TransactionSimulationSuccess -> {
+                        response.logs.forEach {
+                            Logger.d("Simulation log: $it")
+                        }
+                    }
+                }
+            } else {
+                val transactionSignature = solanaClient.sendTransaction(transaction)
+                Logger.d("Transaction successfully sent! Signature: $transactionSignature")
+            }
         } catch (e: Exception) {
             Logger.d("Transaction failed: ${e.message}")
         }
@@ -77,8 +104,9 @@ class Sol4kApi {
     }
 
     companion object {
-        //TODO encrypt/save wallet info and move to repo
-        private const val DEV_WALLET_PRIVATE_KEY =
-            "5MfbR9MuTYeNxtiYoAnqsuhchWTtQHNmM7uagXMqNgzVbmLdBHpu44Fj4pDPfYDdH43uB58WXaZX5B4XJASKBxwR"
+        const val SPL_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+
+
+
     }
 }
