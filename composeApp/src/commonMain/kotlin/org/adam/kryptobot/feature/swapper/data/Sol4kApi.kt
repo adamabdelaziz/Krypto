@@ -1,8 +1,11 @@
 package org.adam.kryptobot.feature.swapper.data
 
+import androidx.compose.runtime.key
 import androidx.compose.ui.input.key.Key
 import co.touchlab.kermit.Logger
 import org.adam.kryptobot.util.DEV_WALLET_PRIVATE_KEY
+import org.adam.kryptobot.util.MAIN_WALLET_PUBLIC_KEY
+import org.adam.kryptobot.util.decodeBase58
 import org.adam.kryptobot.util.encodeBase58
 import org.hipparchus.analysis.function.Log
 import org.sol4k.Base58
@@ -56,24 +59,31 @@ class Sol4kApi {
     }
 
     fun performSwapTransaction(
-        feePayerAddress: String,
+        feePayerAddress: String, //public wallet key probably change param name
         privateKey: String,
         instructions: List<Instruction>,
         rpcUrl: RpcUrl = RpcUrl.MAINNNET,
-        commitment: Commitment = Commitment.CONFIRMED,
+        commitment: Commitment = Commitment.FINALIZED,
         simulation: Boolean = true,
     ) {
         val solanaClient = Connection(rpcUrl, commitment)
 
         val feePayer = PublicKey(feePayerAddress)
 
+        val balance = getWalletBalance(MAIN_WALLET_PUBLIC_KEY)
+        Logger.d("Balance is $balance")
+
+        val hash = solanaClient.getLatestBlockhashExtended(commitment).blockhash
+        val valid = solanaClient.isBlockhashValid(hash, commitment)
+        Logger.d("Hash valid: $valid")
+
         val transaction = Transaction(
             feePayer = feePayer,
-            recentBlockhash = solanaClient.getLatestBlockhash(commitment),
+            recentBlockhash = hash,
             instructions = instructions
         )
 
-        val keypair = Keypair.fromSecretKey(Base58.decode(privateKey))
+        val keypair = Keypair.fromSecretKey(privateKey.decodeBase58())
         transaction.sign(keypair)
 
         try {
@@ -105,8 +115,6 @@ class Sol4kApi {
 
     companion object {
         const val SPL_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-
-
-
     }
+
 }

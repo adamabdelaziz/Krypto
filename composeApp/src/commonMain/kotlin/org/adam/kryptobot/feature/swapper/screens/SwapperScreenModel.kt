@@ -18,13 +18,16 @@ class SwapperScreenModel(
 ) : ScreenModel {
 
     val uiState: StateFlow<SwapperScreenUiState> = combine(
-        swapperRepository.currentQuotes,
         scannerRepository.latestDexPairs,
-    ) { quote, tokens ->
+        swapperRepository.currentQuotes,
+        swapperRepository.currentSwapInstructions,
+        swapperRepository.currentSwapResponse,
+        ) { tokens, quote, swapInstructions, swapResponse, ->
         val pairToShow = tokens.values.flatten().firstOrNull { it.beingTracked }
         SwapperScreenUiState(
             quote = quote,
-            pair = pairToShow
+            pair = pairToShow,
+            swapInstructions = swapInstructions,
         )
     }.stateIn(
         scope = screenModelScope,
@@ -47,6 +50,12 @@ class SwapperScreenModel(
                     swapperRepository.attemptSwapInstructions()
                 }
             }
+
+            SwapperScreenEvent.OnPerformSwapTransactionClicked -> {
+                screenModelScope.launch {
+                    swapperRepository.performSwapTransaction()
+                }
+            }
         }
     }
 
@@ -55,7 +64,7 @@ class SwapperScreenModel(
             swapperRepository.getQuote(
                 inputAddress = dexPair.quoteToken?.address ?: "",
                 outputAddress = dexPair.baseToken?.address ?: "",
-                amount = 0.000001,
+                amount = 0.000000000001,
             )
         }
     }

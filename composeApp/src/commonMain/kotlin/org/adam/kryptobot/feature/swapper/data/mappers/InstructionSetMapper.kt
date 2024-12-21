@@ -2,18 +2,23 @@ package org.adam.kryptobot.feature.swapper.data.mappers
 
 import org.adam.kryptobot.feature.swapper.data.dto.InstructionSet
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
+import org.adam.kryptobot.util.base64ToBase58
+import org.adam.kryptobot.util.base64ToBase58ByteArray
 import org.sol4k.AccountMeta
 import org.sol4k.Base58
 import org.sol4k.PublicKey
 import org.sol4k.instruction.BaseInstruction
 import org.sol4k.instruction.Instruction
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 /*
     To map instruction set from Jupiter Api for usage with Sol4k
  */
+@OptIn(ExperimentalEncodingApi::class)
 fun InstructionSet.toSolInstruction(): BaseInstruction =
     BaseInstruction(
-        data = Base58.decode(this.data), //this.data.toByteArray(), //TODO see if this is correct
+        data = base64ToBase58ByteArray(this.data), //this.data.toByteArray(), //Base58.decode(this.data), //TODO see if this is correct
         keys = this.accounts.map { account ->
             AccountMeta(
                 publicKey = PublicKey(account.pubkey),
@@ -34,23 +39,23 @@ fun InstructionSet.toSolInstruction(): BaseInstruction =
 fun JupiterSwapInstructionsDto.toInstructionList(): List<Instruction> {
     val instructionList: MutableList<Instruction> = mutableListOf()
 
-    this.computeBudgetInstructions?.let { list ->
-        list.forEach {
-            instructionList.add(it.toSolInstruction())
-        }
-    }
+//    this.computeBudgetInstructions?.let { list ->
+//        list.forEach {
+//            instructionList.add(it.toSolInstruction())
+//        }
+//    }
 
-    this.setupInstructions?.let { list ->
-        list.forEach {
-            instructionList.add(it.toSolInstruction())
-        }
-    }
+//    this.setupInstructions?.let { list ->
+//        list.forEach {
+//            instructionList.add(it.toSolInstruction())
+//        }
+//    }
 
     instructionList.add(this.swapInstruction.toSolInstruction())
 
-    this.cleanupInstruction?.let {
-        instructionList.add(it.toSolInstruction())
-    }
+//    this.cleanupInstruction?.let {
+//        instructionList.add(it.toSolInstruction())
+//    }
 
     return instructionList.toList()
 }

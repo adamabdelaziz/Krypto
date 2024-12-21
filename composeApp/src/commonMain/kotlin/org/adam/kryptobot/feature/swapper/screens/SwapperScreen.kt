@@ -46,7 +46,7 @@ class SwapperScreen : Screen {
                 }
             )
             state.pair?.let {
-                PairInfoCard(modifier = Modifier.padding(bottom = 8.dp), pair = it, onClick =  {
+                PairInfoCard(modifier = Modifier.padding(bottom = 8.dp), pair = it, onClick = {
                     onEvent(SwapperScreenEvent.OnDexPairClicked(it))
                 })
             }
@@ -55,6 +55,14 @@ class SwapperScreen : Screen {
                     onClick = { onEvent(SwapperScreenEvent.OnGenerateSwapInstructionsClicked) },
                     content = {
                         Text("Generate Swap Instructions")
+                    }
+                )
+            }
+            state.swapInstructions?.let {
+                Button(
+                    onClick = { onEvent(SwapperScreenEvent.OnPerformSwapTransactionClicked) },
+                    content = {
+                        Text("Perform Swap Transaction")
                     }
                 )
             }

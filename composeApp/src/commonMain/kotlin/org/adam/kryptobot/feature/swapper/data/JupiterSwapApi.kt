@@ -181,7 +181,9 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
             }
 
             val text = response.bodyAsText()
-            Logger.d(text)
+            if(text.isNotEmpty()) {
+                Logger.d("Successful non empty instruction response")
+            }
 
             if (response.status.isSuccess()) {
                 response.body<JupiterSwapInstructionsDto>()

@@ -16,10 +16,15 @@ import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
 import org.adam.kryptobot.feature.swapper.data.dto.PlatformFeeDto
+import org.adam.kryptobot.feature.swapper.data.mappers.toInstructionList
 import org.adam.kryptobot.feature.swapper.data.mappers.wrapped
 import org.adam.kryptobot.feature.swapper.data.mappers.wrappedTemp
 import org.adam.kryptobot.feature.swapper.data.model.Wallet
+import org.adam.kryptobot.util.MAIN_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.MAIN_WALLET_PUBLIC_KEY
+import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
+import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
+import org.sol4k.instruction.Instruction
 import kotlin.math.pow
 
 interface SwapperRepository {
@@ -44,6 +49,8 @@ interface SwapperRepository {
     suspend fun attemptSwap()
     suspend fun attemptSwapInstructions()
 
+    suspend fun performSwapTransaction()
+
     fun createDebugWallet()
 
     val currentWallet: StateFlow<Wallet>
@@ -62,8 +69,8 @@ class SwapperRepositoryImpl(
     //TODO actual wallet access
     private val _currentWallet: MutableStateFlow<Wallet> = MutableStateFlow(
         Wallet(
-            publicKey = "",
-            privateAddress = "",
+            publicKey = SECOND_WALLET_PUBLIC_KEY,
+            privateAddress = SECOND_WALLET_PRIVATE_KEY,
         )
     )
     override val currentWallet: StateFlow<Wallet> = _currentWallet.stateIn(
@@ -72,6 +79,7 @@ class SwapperRepositoryImpl(
         started = SharingStarted.WhileSubscribed(5000),
     )
 
+    //TODO matching quote with the pair its from
     private val _currentQuote: MutableStateFlow<String?> = MutableStateFlow(null)
     override val currentQuotes: StateFlow<String?> = _currentQuote.stateIn(
         scope = stateFlowScope,
@@ -117,6 +125,7 @@ class SwapperRepositoryImpl(
         withContext(Dispatchers.IO) {
             try {
                 val decimals = solanaApi.getMintDecimalsAmount(inputAddress)
+                Logger.d("Decimals for quote is $decimals")
                 val response = swapApi.getQuote(
                     inputAddress = inputAddress,
                     outputAddress = outputAddress,
@@ -134,7 +143,7 @@ class SwapperRepositoryImpl(
                     maxAutoSlippageBps = maxAutoSlippageBps,
                     autoSlippageCollisionUsdValue = autoSlippageCollisionUsdValue
                 )
-                Logger.d("Success getting quote response is $response")
+                //Logger.d("Success getting quote response is $response")
                 response?.let {
                     _currentQuote.value = it
                 }
@@ -179,6 +188,7 @@ class SwapperRepositoryImpl(
                         userPublicKey = MAIN_WALLET_PUBLIC_KEY
                     )
                     instructions?.let {
+                        //Logger.d("Instructions are $it")
                         _currentSwapInstructions.value = it
                     } ?: run {
                         Logger.d("Null instructions")
@@ -192,7 +202,30 @@ class SwapperRepositoryImpl(
         }
     }
 
+    override suspend fun performSwapTransaction() {
+        _currentSwapInstructions.value?.let {
+            withContext(Dispatchers.IO) {
+                try {
+                    val list = it.toInstructionList()
+                    list.forEach {
+                        Logger.d("Instruction in repo is $it")
+                    }
+
+                    solanaApi.performSwapTransaction(
+                        feePayerAddress = MAIN_WALLET_PUBLIC_KEY,
+                        privateKey = MAIN_WALLET_PRIVATE_KEY,
+                        instructions = it.toInstructionList(),
+                    )
+                } catch (e: Exception) {
+                    Logger.d("Exception performing swap transaction ${e.message}")
+                }
+            }
+        }
+    }
+
     override fun createDebugWallet() {
-        solanaApi.restoreWalletFromPrivateKey()
+        solanaApi.restoreWalletFromPrivateKey(SECOND_WALLET_PRIVATE_KEY)
+        val balance = solanaApi.getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
+        Logger.d("Balance is $balance")
     }
 }

@@ -6,4 +6,5 @@ sealed class SwapperScreenEvent {
     data object OnGenerateDebugWalletClicked: SwapperScreenEvent()
     data class OnDexPairClicked(val dexPair: DexPair) : SwapperScreenEvent()
     data object OnGenerateSwapInstructionsClicked: SwapperScreenEvent()
+    data object OnPerformSwapTransactionClicked: SwapperScreenEvent()
 }
