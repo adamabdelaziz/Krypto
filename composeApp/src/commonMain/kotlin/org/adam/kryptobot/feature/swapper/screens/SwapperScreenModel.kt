@@ -28,6 +28,7 @@ class SwapperScreenModel(
             quote = quote,
             pair = pairToShow,
             swapInstructions = swapInstructions,
+            swapResponse = swapResponse,
         )
     }.stateIn(
         scope = screenModelScope,
@@ -47,7 +48,7 @@ class SwapperScreenModel(
 
             SwapperScreenEvent.OnGenerateSwapInstructionsClicked -> {
                 screenModelScope.launch {
-                    swapperRepository.attemptSwapInstructions()
+                    swapperRepository.attemptSwap()
                 }
             }
 
@@ -64,7 +65,7 @@ class SwapperScreenModel(
             swapperRepository.getQuote(
                 inputAddress = dexPair.quoteToken?.address ?: "",
                 outputAddress = dexPair.baseToken?.address ?: "",
-                amount = 0.000000000001,
+                amount = 0.001,
             )
         }
     }

@@ -54,11 +54,11 @@ class SwapperScreen : Screen {
                 Button(
                     onClick = { onEvent(SwapperScreenEvent.OnGenerateSwapInstructionsClicked) },
                     content = {
-                        Text("Generate Swap Instructions")
+                        Text("Generate Swap Instructions ")
                     }
                 )
             }
-            state.swapInstructions?.let {
+            if (state.swapResponse != null || state.swapInstructions != null) {
                 Button(
                     onClick = { onEvent(SwapperScreenEvent.OnPerformSwapTransactionClicked) },
                     content = {

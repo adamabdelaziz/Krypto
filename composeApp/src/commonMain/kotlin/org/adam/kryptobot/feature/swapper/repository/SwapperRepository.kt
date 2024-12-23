@@ -24,6 +24,7 @@ import org.adam.kryptobot.util.MAIN_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.MAIN_WALLET_PUBLIC_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
+import org.adam.kryptobot.util.detectEncoding
 import org.sol4k.instruction.Instruction
 import kotlin.math.pow
 
@@ -32,8 +33,8 @@ interface SwapperRepository {
         inputAddress: String,
         outputAddress: String,
         amount: Double,
-        slippageBps: Int = 50,
-        swapMode: String = "ExactIn",  // Default to ExactIn
+        slippageBps: Int = 10000,
+        swapMode: String = "ExactOut",  // Default to ExactIn
         dexes: List<String>? = null,
         excludeDexes: List<String>? = null,
         restrictIntermediateTokens: Boolean = false,
@@ -163,10 +164,13 @@ class SwapperRepositoryImpl(
                 _currentQuote.value?.let {
                     val instructions = swapApi.swapTokens(
                         quoteResponse = it,
-                        userPublicKey = MAIN_WALLET_PUBLIC_KEY
+                        userPublicKey = SECOND_WALLET_PUBLIC_KEY
                     )
                     instructions?.let {
                         _currentSwapResponse.value = it
+                        Logger.d("Instructions are $it")
+                        val encoding = detectEncoding(it.swapTransaction)
+                        Logger.d("Encoding is $encoding")
                     } ?: run {
                         Logger.d("Null instructions")
                     }
@@ -185,7 +189,7 @@ class SwapperRepositoryImpl(
                 _currentQuote.value?.let {
                     val instructions = swapApi.swapInstructions(
                         quoteResponse = it,
-                        userPublicKey = MAIN_WALLET_PUBLIC_KEY
+                        userPublicKey = SECOND_WALLET_PUBLIC_KEY
                     )
                     instructions?.let {
                         //Logger.d("Instructions are $it")
@@ -203,29 +207,45 @@ class SwapperRepositoryImpl(
     }
 
     override suspend fun performSwapTransaction() {
-        _currentSwapInstructions.value?.let {
+//        _currentSwapInstructions.value?.let {
+//            withContext(Dispatchers.IO) {
+//                try {
+//                    val list = it.toInstructionList()
+//                    list.forEach {
+//                        Logger.d("Instruction in repo is $it")
+//                    }
+//
+//                    solanaApi.performSwapTransaction(
+//                        feePayerAddress = SECOND_WALLET_PUBLIC_KEY,
+//                        privateKey = SECOND_WALLET_PRIVATE_KEY,
+//                        instructions = it.toInstructionList(),
+//                    )
+//                } catch (e: Exception) {
+//                    Logger.d("Exception performing swap transaction ${e.message}")
+//                }
+//            }
+//        }
+
+        _currentSwapResponse.value?.swapTransaction?.let {
             withContext(Dispatchers.IO) {
                 try {
-                    val list = it.toInstructionList()
-                    list.forEach {
-                        Logger.d("Instruction in repo is $it")
-                    }
-
                     solanaApi.performSwapTransaction(
-                        feePayerAddress = MAIN_WALLET_PUBLIC_KEY,
-                        privateKey = MAIN_WALLET_PRIVATE_KEY,
-                        instructions = it.toInstructionList(),
+                        feePayerAddress = SECOND_WALLET_PUBLIC_KEY,
+                        privateKey = SECOND_WALLET_PRIVATE_KEY,
+                        instructions = it
                     )
                 } catch (e: Exception) {
                     Logger.d("Exception performing swap transaction ${e.message}")
+                    e.printStackTrace()
                 }
             }
+        } ?: run {
+            Logger.d("Null swap transaction")
         }
     }
 
     override fun createDebugWallet() {
         solanaApi.restoreWalletFromPrivateKey(SECOND_WALLET_PRIVATE_KEY)
         val balance = solanaApi.getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
-        Logger.d("Balance is $balance")
     }
 }
