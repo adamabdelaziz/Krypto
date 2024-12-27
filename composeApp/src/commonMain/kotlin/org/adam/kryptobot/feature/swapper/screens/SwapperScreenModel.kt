@@ -39,7 +39,9 @@ class SwapperScreenModel(
     fun onEvent(event: SwapperScreenEvent) {
         when (event) {
             SwapperScreenEvent.OnGenerateDebugWalletClicked -> {
-                swapperRepository.createDebugWallet()
+                screenModelScope.launch {
+                    swapperRepository.createDebugWallet()
+                }
             }
 
             is SwapperScreenEvent.OnDexPairClicked -> {

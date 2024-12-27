@@ -52,7 +52,7 @@ interface SwapperRepository {
 
     suspend fun performSwapTransaction()
 
-    fun createDebugWallet()
+    suspend fun createDebugWallet()
 
     val currentWallet: StateFlow<Wallet>
     val currentQuotes: StateFlow<String?>
@@ -244,8 +244,10 @@ class SwapperRepositoryImpl(
         }
     }
 
-    override fun createDebugWallet() {
+    override suspend fun createDebugWallet() {
         solanaApi.restoreWalletFromPrivateKey(SECOND_WALLET_PRIVATE_KEY)
         val balance = solanaApi.getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
+        swapApi.getTokenBalances(SECOND_WALLET_PUBLIC_KEY)
+
     }
 }
