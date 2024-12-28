@@ -62,65 +62,10 @@ interface JupiterSwapApi {
         userPublicKey: String,
     ): JupiterSwapInstructionsDto?
 
-    suspend fun getTokenBalances(
-        publicKey: String
-    )
+
 }
 
 class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
-
-    //TODO: move
-    override suspend fun getTokenBalances(publicKey: String) {
-        try {
-            val requestBody = """
-        {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getTokenAccountsByOwner",
-            "params": [
-                "$publicKey",
-                { "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-                { "encoding": "jsonParsed" }
-            ]
-        }
-        """
-
-            val response: HttpResponse = client.post(RpcUrl.MAINNNET.value) {
-                setBody(requestBody)
-                headers {
-                    append("Content-Type", "application/json")
-                }
-            }
-
-            val responseBody: JsonObject = Json.parseToJsonElement(response.body<String>()).jsonObject
-            val tokenAccounts = responseBody["result"]
-                ?.jsonObject?.get("value")
-                ?.jsonArray
-
-            Logger.d("SPL Tokens:")
-            tokenAccounts?.forEach { account ->
-                val mint = account.jsonObject["account"]
-                    ?.jsonObject?.get("data")
-                    ?.jsonObject?.get("parsed")
-                    ?.jsonObject?.get("info")
-                    ?.jsonObject?.get("mint")
-                    ?.jsonPrimitive?.content
-
-                val balance = account.jsonObject["account"]
-                    ?.jsonObject?.get("data")
-                    ?.jsonObject?.get("parsed")
-                    ?.jsonObject?.get("info")
-                    ?.jsonObject?.get("tokenAmount")
-                    ?.jsonObject?.get("uiAmount")
-                    ?.jsonPrimitive?.double
-
-                Logger.d("Mint: $mint, Balance: $balance")
-            }
-        }  catch (e: Exception) {
-            Logger.d("${e.message}")
-        }
-    }
-
     override suspend fun getQuote(
         inputAddress: String,
         outputAddress: String,

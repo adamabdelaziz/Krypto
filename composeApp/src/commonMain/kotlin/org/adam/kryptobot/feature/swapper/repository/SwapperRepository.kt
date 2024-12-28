@@ -8,24 +8,14 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.adam.kryptobot.feature.swapper.data.JupiterSwapApi
-import org.adam.kryptobot.feature.swapper.data.Sol4kApi
-import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
+import org.adam.kryptobot.feature.swapper.data.SolanaApi
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
-import org.adam.kryptobot.feature.swapper.data.dto.PlatformFeeDto
-import org.adam.kryptobot.feature.swapper.data.mappers.toInstructionList
-import org.adam.kryptobot.feature.swapper.data.mappers.wrapped
-import org.adam.kryptobot.feature.swapper.data.mappers.wrappedTemp
-import org.adam.kryptobot.feature.swapper.data.model.Wallet
-import org.adam.kryptobot.util.MAIN_WALLET_PRIVATE_KEY
-import org.adam.kryptobot.util.MAIN_WALLET_PUBLIC_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
 import org.adam.kryptobot.util.detectEncoding
-import org.sol4k.instruction.Instruction
 import kotlin.math.pow
 
 interface SwapperRepository {
@@ -34,7 +24,7 @@ interface SwapperRepository {
         outputAddress: String,
         amount: Double,
         slippageBps: Int = 10000,
-        swapMode: String = "ExactOut",  // Default to ExactIn
+        swapMode: String = "ExactOut",  // Default to ExactIn? ExactOut worked though
         dexes: List<String>? = null,
         excludeDexes: List<String>? = null,
         restrictIntermediateTokens: Boolean = false,
@@ -52,9 +42,7 @@ interface SwapperRepository {
 
     suspend fun performSwapTransaction()
 
-    suspend fun createDebugWallet()
-
-    val currentWallet: StateFlow<Wallet>
+    //TODO change for support for multiple DEX pairs at once(key field in data object instead of maps)
     val currentQuotes: StateFlow<String?>
     val currentSwapInstructions: StateFlow<JupiterSwapInstructionsDto?>
     val currentSwapResponse: StateFlow<JupiterSwapResponseDto?>
@@ -64,21 +52,8 @@ class SwapperRepositoryImpl(
     private val json: Json,
     private val stateFlowScope: CoroutineScope,
     private val swapApi: JupiterSwapApi,
-    private val solanaApi: Sol4kApi,
+    private val solanaApi: SolanaApi,
 ) : SwapperRepository {
-
-    //TODO actual wallet access
-    private val _currentWallet: MutableStateFlow<Wallet> = MutableStateFlow(
-        Wallet(
-            publicKey = SECOND_WALLET_PUBLIC_KEY,
-            privateAddress = SECOND_WALLET_PRIVATE_KEY,
-        )
-    )
-    override val currentWallet: StateFlow<Wallet> = _currentWallet.stateIn(
-        scope = stateFlowScope,
-        initialValue = _currentWallet.value,
-        started = SharingStarted.WhileSubscribed(5000),
-    )
 
     //TODO matching quote with the pair its from
     private val _currentQuote: MutableStateFlow<String?> = MutableStateFlow(null)
@@ -207,30 +182,10 @@ class SwapperRepositoryImpl(
     }
 
     override suspend fun performSwapTransaction() {
-//        _currentSwapInstructions.value?.let {
-//            withContext(Dispatchers.IO) {
-//                try {
-//                    val list = it.toInstructionList()
-//                    list.forEach {
-//                        Logger.d("Instruction in repo is $it")
-//                    }
-//
-//                    solanaApi.performSwapTransaction(
-//                        feePayerAddress = SECOND_WALLET_PUBLIC_KEY,
-//                        privateKey = SECOND_WALLET_PRIVATE_KEY,
-//                        instructions = it.toInstructionList(),
-//                    )
-//                } catch (e: Exception) {
-//                    Logger.d("Exception performing swap transaction ${e.message}")
-//                }
-//            }
-//        }
-
         _currentSwapResponse.value?.swapTransaction?.let {
             withContext(Dispatchers.IO) {
                 try {
                     solanaApi.performSwapTransaction(
-                        feePayerAddress = SECOND_WALLET_PUBLIC_KEY,
                         privateKey = SECOND_WALLET_PRIVATE_KEY,
                         instructions = it
                     )
@@ -244,10 +199,5 @@ class SwapperRepositoryImpl(
         }
     }
 
-    override suspend fun createDebugWallet() {
-        solanaApi.restoreWalletFromPrivateKey(SECOND_WALLET_PRIVATE_KEY)
-        val balance = solanaApi.getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
-        swapApi.getTokenBalances(SECOND_WALLET_PUBLIC_KEY)
 
-    }
 }

@@ -9,12 +9,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
-import org.adam.kryptobot.feature.scanner.screens.ScannerScreenUiState
 import org.adam.kryptobot.feature.swapper.repository.SwapperRepository
+import org.adam.kryptobot.feature.wallet.repository.WalletRepository
 
 class SwapperScreenModel(
     private val swapperRepository: SwapperRepository,
     private val scannerRepository: ScannerRepository,
+    private val walletRepository: WalletRepository,
 ) : ScreenModel {
 
     val uiState: StateFlow<SwapperScreenUiState> = combine(
@@ -40,7 +41,7 @@ class SwapperScreenModel(
         when (event) {
             SwapperScreenEvent.OnGenerateDebugWalletClicked -> {
                 screenModelScope.launch {
-                    swapperRepository.createDebugWallet()
+                    walletRepository.refreshBalance()
                 }
             }
 
