@@ -53,17 +53,6 @@ fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPair?, onClick: () -> U
             .padding(8.dp),
         elevation = 4.dp
     ) {
-//        Column(modifier = Modifier.padding(16.dp)) {
-//            val painterResource: Resource<Painter> = asyncPainterResource(pair.info?.imageUrl ?: "")
-//            painterResource.getOrNull()?.let {
-//                Image(
-//                    painter = it,
-//                    contentDescription = null,
-//                    modifier = Modifier.aspectRatio(1f).width(200.dp).height(200.dp),
-//                    contentScale = ContentScale.Crop
-//                )
-//            }
-//        }
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -283,10 +272,6 @@ fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPair?, onClick: () -> U
 
             Spacer(modifier = Modifier.height(8.dp))
 
-//            Text(
-//                text = "Pair Address: ${pair.pairAddress ?: "N/A"}",
-//                style = MaterialTheme.typography.caption
-//            )
         }
     }
 }

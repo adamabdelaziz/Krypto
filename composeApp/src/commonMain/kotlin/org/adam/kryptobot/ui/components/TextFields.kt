@@ -1,32 +1,24 @@
 package org.adam.kryptobot.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.TextFieldColors
-import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.Eye
 import compose.icons.feathericons.EyeOff
-import org.adam.kryptobot.ui.theme.AppShapes
-import org.adam.kryptobot.ui.theme.LocalAppColors
-import org.adam.kryptobot.ui.theme.LocalAppShapes
-import org.adam.kryptobot.ui.theme.LocalAppTypography
+import org.adam.kryptobot.ui.theme.AppOutlinedTextFieldColors
+import org.adam.kryptobot.ui.theme.CurrentColors
+import org.adam.kryptobot.ui.theme.CurrentShapes
+import org.adam.kryptobot.ui.theme.CurrentTypography
 
 @Composable
 fun ToggleableVisibilityField(
@@ -39,12 +31,8 @@ fun ToggleableVisibilityField(
 ) {
     OutlinedTextField(
         modifier = modifier,
-        colors = TextFieldDefaults.outlinedTextFieldColors(
-            backgroundColor = LocalAppColors.current.secondary,
-            focusedBorderColor = LocalAppColors.current.primary,
-            focusedLabelColor = LocalAppColors.current.onPrimary,
-        ),
-        shape = LocalAppShapes.current.pill,
+        colors = AppOutlinedTextFieldColors,
+        shape = CurrentShapes.pill,
         value = text,
         onValueChange = { onTextChanged(it) },
         label = { TextFieldLabel(text = label) },
@@ -68,12 +56,8 @@ fun InputTextField(
 ) {
     OutlinedTextField(
         modifier = modifier,
-        colors = TextFieldDefaults.outlinedTextFieldColors(
-            backgroundColor = LocalAppColors.current.secondary,
-            focusedBorderColor = LocalAppColors.current.primary,
-            focusedLabelColor = LocalAppColors.current.onPrimary,
-        ),
-        shape = LocalAppShapes.current.pill,
+        colors = AppOutlinedTextFieldColors,
+        shape = CurrentShapes.pill,
         value = text,
         onValueChange = { onTextChanged(it) },
         label = { TextFieldLabel(text = label) },
@@ -86,10 +70,10 @@ fun TextFieldLabel(
     text: String,
 ) {
     Text(
-        modifier = modifier.padding(8.dp).clip(LocalAppShapes.current.pill).background(
-            LocalAppColors.current.primary
+        modifier = modifier.padding(8.dp).clip(CurrentShapes.pill).background(
+            CurrentColors.primary
         ).padding(8.dp),
         text = text,
-        style = LocalAppTypography.current.body1,
+        style = CurrentTypography.body1,
     )
 }

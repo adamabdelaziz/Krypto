@@ -2,10 +2,14 @@ package org.adam.kryptobot.ui.theme
 
 import androidx.compose.runtime.Composable
 
-val AppColors.current: AppColors
+val CurrentColors: AppColors
     @Composable
     get() = LocalAppColors.current
 
-val AppShapes.current: AppShapes
+val CurrentShapes: AppShapes
     @Composable
     get() = LocalAppShapes.current
+
+val CurrentTypography: AppTypography
+    @Composable
+    get() = LocalAppTypography.current

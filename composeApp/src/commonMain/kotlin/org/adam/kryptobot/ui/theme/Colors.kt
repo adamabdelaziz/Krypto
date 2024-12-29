@@ -1,6 +1,7 @@
 package org.adam.kryptobot.ui.theme
 
 import androidx.compose.material.TextFieldDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 /*
