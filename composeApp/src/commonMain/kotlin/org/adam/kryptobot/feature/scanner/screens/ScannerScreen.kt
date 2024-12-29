@@ -29,6 +29,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.ui.components.PairInfoCard
 import org.adam.kryptobot.ui.components.PaymentStatusCard
+import org.adam.kryptobot.ui.theme.LocalAppColors
 
 class ScannerScreen : Screen {
 
@@ -44,7 +45,7 @@ class ScannerScreen : Screen {
     @Composable
     fun ScannerScreenContent(state: ScannerScreenUiState, onEvent: (ScannerScreenEvent) -> Unit) {
         Column(
-            modifier = Modifier.fillMaxSize().background(Color.Gray).padding(bottom = 64.dp),
+            modifier = Modifier.fillMaxSize().background(LocalAppColors.current.background).padding(bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {

@@ -2,6 +2,7 @@ package org.adam.kryptobot.feature.wallet.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -15,16 +16,21 @@ class WalletScreenModel(
     private val walletRepository: WalletRepository
 ) : ScreenModel {
 
-    val uiState: StateFlow<WalletScreenUiState> = walletRepository.currentWallet
-        .map { wallet ->
-            WalletScreenUiState(
-                wallet = wallet
-            )
-        }.stateIn(
-            scope = screenModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = WalletScreenUiState()
+    private val _privateKeyVisibility = MutableStateFlow(false)
+
+    val uiState: StateFlow<WalletScreenUiState> = combine(
+        walletRepository.currentWallet,
+        _privateKeyVisibility
+    ) { wallet, isPrivateKeyVisible ->
+        WalletScreenUiState(
+            wallet = wallet,
+            isPrivateKeyVisible = isPrivateKeyVisible
         )
+    }.stateIn(
+        scope = screenModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = WalletScreenUiState()
+    )
 
     fun onEvent(event: WalletScreenEvent) {
         when (event) {
@@ -32,7 +38,6 @@ class WalletScreenModel(
                 screenModelScope.launch {
                     walletRepository.refreshBalance()
                 }
-
             }
 
             is WalletScreenEvent.OnUpdatePrivateKeyClicked -> {
@@ -42,6 +47,10 @@ class WalletScreenModel(
             is WalletScreenEvent.OnUpdatePublicKeyClicked -> {
                 walletRepository.updateWallet { it.copy(publicKey = event.publicKey) }
             }
+            WalletScreenEvent.OnToggleVisibilityClicked -> {
+                _privateKeyVisibility.value = !_privateKeyVisibility.value
+            }
         }
     }
+
 }

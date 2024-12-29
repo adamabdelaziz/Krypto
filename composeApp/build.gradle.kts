@@ -44,10 +44,11 @@ kotlin {
                 implementation(compose.material)
                 implementation(compose.ui)
                 implementation(compose.components.resources)
+                implementation(compose.uiTooling)
                 implementation(compose.components.uiToolingPreview)
                 implementation(libs.androidx.lifecycle.viewmodel)
                 implementation(libs.androidx.lifecycle.runtime.compose)
-
+                implementation(libs.composeIcons.feather)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.serialization.kotlinx.json)
@@ -155,6 +156,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.ui.tooling.preview.android)
     debugImplementation(compose.uiTooling)
 }
 

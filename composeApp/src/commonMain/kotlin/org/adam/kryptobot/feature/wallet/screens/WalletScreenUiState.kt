@@ -4,4 +4,5 @@ import org.adam.kryptobot.feature.wallet.data.model.Wallet
 
 data class WalletScreenUiState(
     val wallet: Wallet? = null,
+    val isPrivateKeyVisible:Boolean = false,
 )

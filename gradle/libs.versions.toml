@@ -5,8 +5,8 @@ android-minSdk = "24"
 android-targetSdk = "34"
 androidx-activityCompose = "1.9.3"
 androidx-appcompat = "1.7.0"
-androidx-constraintlayout = "2.1.4"
-androidx-core-ktx = "1.13.1"
+androidx-constraintlayout = "2.2.0"
+androidx-core-ktx = "1.15.0"
 androidx-espresso-core = "3.6.1"
 androidx-lifecycle = "2.8.3"
 androidx-material = "1.12.0"
@@ -30,6 +30,10 @@ roboquant = "2.2.0"
 kermit = "2.0.5"
 activityKtx = "1.9.3"
 sol4k= "0.5.4"
+animationCoreLint = "1.8.0-alpha07"
+uiGraphicsLint = "1.8.0-alpha07"
+uiToolingPreviewAndroid = "1.7.6"
+composeIcons = "1.1.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -52,6 +56,8 @@ androidx-lifecycle-runtime-compose-desktop = { group = "androidx.lifecycle", nam
 kamel = { module = "media.kamel:kamel-image", version.ref = "kamel" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit"}
 sol4k = { module = "org.sol4k:sol4k", version.ref = "sol4k"}
+
+composeIcons-feather = { module = "br.com.devsrsouza.compose.icons:feather", version.ref = "composeIcons" }
 
 # Roboquant
 roboquant = { module = "org.roboquant:roboquant", version.ref = "roboquant"}
@@ -79,6 +85,9 @@ voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", vers
 voyager-koin = { module = "cafe.adriel.voyager:voyager-koin", version.ref = "voyager" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
 androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
+androidx-animation-core-lint = { group = "androidx.compose.animation", name = "animation-core-lint", version.ref = "animationCoreLint" }
+androidx-ui-graphics-lint = { group = "androidx.compose.ui", name = "ui-graphics-lint", version.ref = "uiGraphicsLint" }
+androidx-ui-tooling-preview-android = { group = "androidx.compose.ui", name = "ui-tooling-preview-android", version.ref = "uiToolingPreviewAndroid" }
 
 # Room
 #room-gradle-plugin = { module = "androidx.room:room-gradle-plugin", version.ref = "room" }

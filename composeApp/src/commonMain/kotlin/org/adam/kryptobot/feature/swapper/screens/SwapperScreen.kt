@@ -19,6 +19,7 @@ import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.adam.kryptobot.ui.components.PairInfoCard
+import org.adam.kryptobot.ui.theme.LocalAppColors
 
 class SwapperScreen : Screen {
 
@@ -34,7 +35,7 @@ class SwapperScreen : Screen {
     @Composable
     fun SwapperScreenContent(state: SwapperScreenUiState, onEvent: (SwapperScreenEvent) -> Unit) {
         Column(
-            modifier = Modifier.fillMaxSize().background(Color.Gray).padding(bottom = 64.dp),
+            modifier = Modifier.fillMaxSize().background(LocalAppColors.current.background).padding(bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
