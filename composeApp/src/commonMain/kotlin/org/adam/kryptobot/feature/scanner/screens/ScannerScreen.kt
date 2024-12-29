@@ -64,14 +64,16 @@ class ScannerScreen : Screen {
                     )
                 }
             }
-        }
 
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            items(state.latestDexPairs) { pair ->
-                PairInfoCard(pair = pair, onClick = {
-                    onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
-                })
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                items(state.latestDexPairs) { pair ->
+                    PairInfoCard(pair = pair, onClick = {
+                        onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
+                    })
+                }
             }
         }
+
+
     }
 }

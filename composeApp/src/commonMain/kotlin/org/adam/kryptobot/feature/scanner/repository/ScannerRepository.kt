@@ -30,9 +30,6 @@ interface ScannerRepository {
     fun trackPair(dexPair: DexPair)
 
     //TODO make a wrapper for DTO and then map to TokenCategory
-    val latestTokens: StateFlow<List<LatestTokenDto>>
-    val latestBoostedTokens: StateFlow<List<BoostedTokenDto>>
-    val mostActiveBoostedTokens: StateFlow<List<BoostedTokenDto>>
     val tokens: StateFlow<Map<TokenCategory, List<Token>>>
 
     val latestDexPairs: StateFlow<Map<TokenCategory, List<DexPair>>>
@@ -43,32 +40,6 @@ class ScannerRepositoryImpl(
     private val api: DexScannerApi,
     private val stateFlowScope: CoroutineScope,
 ) : ScannerRepository {
-
-    private val _latestTokens: MutableStateFlow<List<LatestTokenDto>> =
-        MutableStateFlow(listOf())
-    override val latestTokens: StateFlow<List<LatestTokenDto>> = _latestTokens.stateIn(
-        scope = stateFlowScope,
-        initialValue = _latestTokens.value,
-        started = SharingStarted.WhileSubscribed(5000),
-    )
-
-    private val _latestBoostedTokens: MutableStateFlow<List<BoostedTokenDto>> =
-        MutableStateFlow(listOf())
-    override val latestBoostedTokens: StateFlow<List<BoostedTokenDto>> =
-        _latestBoostedTokens.stateIn(
-            scope = stateFlowScope,
-            initialValue = _latestBoostedTokens.value,
-            started = SharingStarted.WhileSubscribed(5000),
-        )
-
-    private val _mostActiveBoostedTokens: MutableStateFlow<List<BoostedTokenDto>> =
-        MutableStateFlow(listOf())
-    override val mostActiveBoostedTokens: StateFlow<List<BoostedTokenDto>> =
-        _mostActiveBoostedTokens.stateIn(
-            scope = stateFlowScope,
-            initialValue = _mostActiveBoostedTokens.value,
-            started = SharingStarted.WhileSubscribed(5000),
-        )
 
     private val _tokens: MutableStateFlow<Map<TokenCategory, List<Token>>> =
         MutableStateFlow(mapOf())
@@ -117,44 +88,6 @@ class ScannerRepositoryImpl(
                 _tokens.value = map.toMap()
             } catch (e: Exception) {
                 Logger.d(e.message ?: " Null Error Message for getLatestTokens()")
-            }
-        }
-    }
-
-
-    //TODO Consolidate with category
-    private suspend fun getLatestTokens() {
-        withContext(Dispatchers.IO) {
-            try {
-                val response = api.getLatestTokens()
-                Logger.d("List Size is ${response.size}")
-                _latestTokens.value = response
-            } catch (e: Exception) {
-                Logger.d(e.message ?: " Null Error Message for getLatestTokens()")
-            }
-        }
-    }
-
-    private suspend fun getLatestBoostedTokens() {
-        withContext(Dispatchers.IO) {
-            try {
-                val response = api.getLatestBoostedTokens()
-                Logger.d("Boosted List Size is ${response.size}")
-                _latestBoostedTokens.value = response
-            } catch (e: Exception) {
-                Logger.d(e.message ?: " Null Error Message for getLatestBoostedTokens()")
-            }
-        }
-    }
-
-    private suspend fun getMostActiveBoostedTokens() {
-        withContext(Dispatchers.IO) {
-            try {
-                val response = api.getMostActiveBoostedTokens()
-                Logger.d("Boosted List Size is ${response.size}")
-                _mostActiveBoostedTokens.value = response
-            } catch (e: Exception) {
-                Logger.d(e.message ?: " Null Error Message for getLatestBoostedTokens()")
             }
         }
     }

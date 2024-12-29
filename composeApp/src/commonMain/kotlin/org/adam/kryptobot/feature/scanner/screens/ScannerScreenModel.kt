@@ -23,19 +23,14 @@ class ScannerScreenModel(
 
     private val _selectedTokenCategory: MutableStateFlow<TokenCategory> =
         MutableStateFlow(TokenCategory.MOST_ACTIVE_BOOSTED)
-    val selectedCategory: StateFlow<TokenCategory> = _selectedTokenCategory
 
     val uiState: StateFlow<ScannerScreenUiState> = combine(
-        scannerRepository.latestTokens,
-        scannerRepository.latestBoostedTokens,
         scannerRepository.latestDexPairs,
         _selectedTokenCategory,
         scannerRepository.ordersPaidForByTokenAddress
-    ) { latestTokens, latestBoostedTokens, latestDexPairs, selectedTokenCategory, orders ->
+    ) { latestDexPairs, selectedTokenCategory, orders ->
         val pairs = latestDexPairs[selectedTokenCategory] ?: listOf()
         ScannerScreenUiState(
-            latestTokens = latestTokens,
-            latestBoostedTokens = latestBoostedTokens,
             latestDexPairs = pairs,
             selectedTokenCategory = selectedTokenCategory,
             currentPaymentStatus = orders,
@@ -70,12 +65,6 @@ class ScannerScreenModel(
             }
 
             is ScannerScreenEvent.OnTokenAddressSelected -> {
-//                val chainId = event.pair.chainId ?: ""
-//                val tokenAddress = event.pair.baseToken?.address ?: ""
-//                val pairAddress = event.pair.pairAddress ?: ""
-//                monitorOrders(chainId, tokenAddress)
-//                monitorTokenAddress(chainId, pairAddress)
-
                 scannerRepository.trackPair(event.pair)
             }
 

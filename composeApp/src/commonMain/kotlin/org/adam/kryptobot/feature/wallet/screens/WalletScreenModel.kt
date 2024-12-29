@@ -15,7 +15,7 @@ import org.adam.kryptobot.feature.wallet.repository.WalletRepository
 class WalletScreenModel(
     private val walletRepository: WalletRepository
 ) : ScreenModel {
-
+    
     private val _privateKeyVisibility = MutableStateFlow(false)
 
     val uiState: StateFlow<WalletScreenUiState> = combine(
