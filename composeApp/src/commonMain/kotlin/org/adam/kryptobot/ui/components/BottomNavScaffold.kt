@@ -1,5 +1,6 @@
 package org.adam.kryptobot.ui.components
 
+import WalletTab
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,7 @@ fun BottomNavScaffold() {
             BottomNavigation(backgroundColor = Color.Black, elevation = 32.dp) {
                 TabNavigationItem(ScannerTab)
                 TabNavigationItem(SwapperTab)
+                TabNavigationItem(WalletTab)
             }
         },
         content = { CurrentTab() },
