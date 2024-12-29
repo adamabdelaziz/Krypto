@@ -27,6 +27,7 @@ import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
+import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.PairInfoCard
 import org.adam.kryptobot.ui.components.PaymentStatusCard
 import org.adam.kryptobot.ui.theme.LocalAppColors
@@ -45,39 +46,31 @@ class ScannerScreen : Screen {
     @Composable
     fun ScannerScreenContent(state: ScannerScreenUiState, onEvent: (ScannerScreenEvent) -> Unit) {
         Column(
-            modifier = Modifier.fillMaxSize().background(LocalAppColors.current.background).padding(bottom = 64.dp),
+            modifier = Modifier.fillMaxSize().background(LocalAppColors.current.background)
+                .padding(bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
-//                Button(modifier = Modifier.padding(end = 8.dp), onClick = {
-//                    onEvent(ScannerScreenEvent.OnTokenAddressSelected("", ""))
-//                }, content = {
-//                    Text("Start")
-//                })
-                Button(onClick = {
-                    onEvent(ScannerScreenEvent.OnStopSelected)
-                }, content = {
-                    Text("Stop")
-                })
+                BasicButton(onClick = { onEvent(ScannerScreenEvent.OnStopSelected) }, text = "Stop")
             }
 
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
                 for (category in TokenCategory.entries) {
-                    Button(modifier = Modifier.padding(end = 8.dp), onClick = {
-                        onEvent(ScannerScreenEvent.OnTokenCategorySelected(category))
-                    }, content = {
-                        Text(category.toString())
-                    })
+                    BasicButton(
+                        modifier = Modifier.padding(end = 8.dp),
+                        onClick = { onEvent(ScannerScreenEvent.OnTokenCategorySelected(category)) },
+                        text = category.toString()
+                    )
                 }
             }
+        }
 
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                items(state.latestDexPairs) { pair ->
-                    PairInfoCard(pair = pair, onClick = {
-                        onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
-                    })
-                }
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            items(state.latestDexPairs) { pair ->
+                PairInfoCard(pair = pair, onClick = {
+                    onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
+                })
             }
         }
     }

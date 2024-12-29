@@ -18,6 +18,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.PairInfoCard
 import org.adam.kryptobot.ui.theme.LocalAppColors
 
@@ -35,16 +36,15 @@ class SwapperScreen : Screen {
     @Composable
     fun SwapperScreenContent(state: SwapperScreenUiState, onEvent: (SwapperScreenEvent) -> Unit) {
         Column(
-            modifier = Modifier.fillMaxSize().background(LocalAppColors.current.background).padding(bottom = 64.dp),
+            modifier = Modifier.fillMaxSize().background(LocalAppColors.current.background)
+                .padding(bottom = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            Button(
+            BasicButton(
                 modifier = Modifier.padding(bottom = 8.dp),
                 onClick = { onEvent(SwapperScreenEvent.OnGenerateDebugWalletClicked) },
-                content = {
-                    Text("Generate Debug Wallet")
-                }
+                text = "Generate Debug Wallet"
             )
             state.pair?.let {
                 PairInfoCard(modifier = Modifier.padding(bottom = 8.dp), pair = it, onClick = {
@@ -52,19 +52,15 @@ class SwapperScreen : Screen {
                 })
             }
             state.quote?.let {
-                Button(
+                BasicButton(
                     onClick = { onEvent(SwapperScreenEvent.OnGenerateSwapInstructionsClicked) },
-                    content = {
-                        Text("Generate Swap Instructions ")
-                    }
+                    text = "Generate Swap Instructions "
                 )
             }
             if (state.swapResponse != null || state.swapInstructions != null) {
-                Button(
+                BasicButton(
                     onClick = { onEvent(SwapperScreenEvent.OnPerformSwapTransactionClicked) },
-                    content = {
-                        Text("Perform Swap Transaction")
-                    }
+                    text = "Perform Swap Transaction"
                 )
             }
         }
