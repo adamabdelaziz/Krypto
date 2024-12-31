@@ -7,7 +7,7 @@ import org.koin.dsl.module
 
 val screenModelsModule = module {
     factory {
-        ScannerScreenModel(get())
+        ScannerScreenModel(scannerRepository = get(), monitorTokenAddresses = get())
     }
     factory {
         SwapperScreenModel(

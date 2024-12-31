@@ -9,8 +9,12 @@ import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
+import androidx.compose.material.SnackbarHost
+import androidx.compose.material.SnackbarResult
 import androidx.compose.material.Text
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -20,10 +24,43 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import org.adam.kryptobot.navigation.tabs.ScannerTab
 import org.adam.kryptobot.navigation.tabs.SwapperTab
+import org.adam.kryptobot.ui.components.snackbar.AppSnackbar
+import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
 
 @Composable
-fun BottomNavScaffold() {
+fun BottomNavScaffold(
+    snackbarManager: SnackbarManager = SnackbarManager
+) {
+    val scaffoldState = rememberScaffoldState()
+
+    LaunchedEffect(snackbarManager.messages) {
+        snackbarManager.messages.collect { snackbarMessage ->
+            val result = scaffoldState.snackbarHostState.showSnackbar(
+                message = snackbarMessage.message,
+                actionLabel = snackbarMessage.actionLabel
+            )
+            when (result) {
+                SnackbarResult.ActionPerformed -> {
+                    snackbarMessage.onActionPerformed
+                }
+
+                SnackbarResult.Dismissed -> {
+                    snackbarMessage.onDismissed
+                }
+            }
+        }
+    }
+
     Scaffold(
+        scaffoldState = scaffoldState,
+        snackbarHost = {
+            SnackbarHost(
+                hostState = scaffoldState.snackbarHostState,
+                snackbar = { data ->
+                    AppSnackbar(snackbarData = data)
+                }
+            )
+        },
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             /*

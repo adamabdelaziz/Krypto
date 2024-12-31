@@ -165,7 +165,7 @@ class ScannerRepositoryImpl(
         val updatedMap = _latestDexPairs.value.mapValues { (_, pairs) ->
             pairs.map { pair ->
                 if (pair.pairAddress == dexPair.pairAddress) {
-                    pair.copy(beingTracked = true)
+                    pair.copy(beingTracked = !pair.beingTracked)
                 } else {
                     pair
                 }

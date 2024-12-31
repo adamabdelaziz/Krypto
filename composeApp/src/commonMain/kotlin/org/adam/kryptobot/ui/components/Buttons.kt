@@ -18,6 +18,7 @@ import org.adam.kryptobot.ui.theme.CurrentTypography
 fun BasicButton(
     modifier: Modifier = Modifier,
     text: String,
+    textColor: Color = CurrentColors.onPrimary,
     onClick: () -> Unit,
 ) {
     Button(
@@ -28,7 +29,7 @@ fun BasicButton(
         elevation = ButtonDefaults.elevation(16.dp, 24.dp,),
         colors = AppButtonColors
     ) {
-        ButtonText(text = text)
+        ButtonText(text = text, color = textColor)
     }
 }
 

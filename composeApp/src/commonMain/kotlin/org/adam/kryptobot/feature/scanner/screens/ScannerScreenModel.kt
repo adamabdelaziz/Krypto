@@ -12,13 +12,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
+import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
 
 class ScannerScreenModel(
     private val scannerRepository: ScannerRepository,
+    private val monitorTokenAddresses: MonitorTokenAddressesUseCase,
 ) : ScreenModel {
 
     private val _selectedTokenCategory: MutableStateFlow<TokenCategory> =
@@ -41,29 +44,16 @@ class ScannerScreenModel(
         initialValue = ScannerScreenUiState()
     )
 
-    private var tokenScanJob: Job? = null
-    private var boostedTokenScanJob: Job? = null
-    private var mostBoostedTokenScanJob: Job? = null
-    private var monitorTokenAddressJob: Job? = null
-    private var monitorTokenAddressJobTwo: Job? = null
-    private var monitorOrderJob: Job? = null
-
     init {
-        // scanBoostedTokens()
+        screenModelScope.launch {
+            _selectedTokenCategory.collect {
+                monitorTokenAddresses.invoke(it)
+            }
+        }
     }
 
     fun onEvent(event: ScannerScreenEvent) {
         when (event) {
-            ScannerScreenEvent.OnBoostedTokenViewSelected -> {
-                tokenScanJob?.cancelAndNull()
-                scanBoostedTokens()
-            }
-
-            ScannerScreenEvent.OnTokenViewSelected -> {
-                boostedTokenScanJob?.cancelAndNull()
-                scanTokens()
-            }
-
             is ScannerScreenEvent.OnTokenAddressSelected -> {
                 scannerRepository.trackPair(event.pair)
             }
@@ -78,124 +68,15 @@ class ScannerScreenModel(
         }
     }
 
-    private fun scanTokens() {
-        Logger.d("scan tokens called")
-        tokenScanJob?.cancelAndNull()
-        tokenScanJob = screenModelScope.launch {
-            while (true) {
-                scannerRepository.getTokens(TokenCategory.LATEST)
-                delay(SCAN_DELAY)
-            }
-        }
-        tokenScanJob?.start()
-    }
-
-    private fun scanBoostedTokens() {
-        boostedTokenScanJob?.cancelAndNull()
-        boostedTokenScanJob = screenModelScope.launch {
-            while (true) {
-                scannerRepository.getTokens(TokenCategory.LATEST_BOOSTED)
-                delay(SCAN_DELAY)
-            }
-        }
-        boostedTokenScanJob?.start()
-    }
-
-    private fun scanMostBoostedTokens() {
-        mostBoostedTokenScanJob?.cancelAndNull()
-        mostBoostedTokenScanJob = screenModelScope.launch {
-            while (true) {
-                scannerRepository.getTokens(TokenCategory.MOST_ACTIVE_BOOSTED)
-                delay(SCAN_DELAY)
-            }
-        }
-        mostBoostedTokenScanJob?.start()
-    }
-
-    private fun monitorTokenAddress(chainId: String, tokenAddress: String) {
-        Logger.d("monitorTokenAddress monkas $chainId $tokenAddress called")
-        monitorTokenAddressJobTwo?.cancelAndNull()
-        monitorTokenAddressJobTwo = screenModelScope.launch {
-            while (true) {
-                scannerRepository.getDexPairsByChainAndAddress(chainId, tokenAddress)
-                delay(SCAN_DELAY)
-            }
-        }
-        monitorTokenAddressJobTwo?.start()
-    }
-
-    private fun monitorOrders(chainId: String, tokenAddress: String) {
-        monitorOrderJob?.cancelAndNull()
-        monitorOrderJob = screenModelScope.launch {
-            while (true) {
-                scannerRepository.getOrdersPaidFor(chainId, tokenAddress)
-                delay(SCAN_DELAY)
-            }
-        }
-        monitorOrderJob?.start()
-    }
-
-    private fun monitorAllTokenAddress() {
-        monitorTokenAddressJob?.cancelAndNull()
-        monitorTokenAddressJob = screenModelScope.launch {
-            while (true) {
-                scannerRepository.getDexPairsByAddressList(_selectedTokenCategory.value)
-                delay(SCAN_DELAY)
-            }
-        }
-        monitorTokenAddressJob?.start()
-    }
-
     private fun switchCategory(category: TokenCategory) {
         _selectedTokenCategory.value = category
-        stopAllScanning()
-        when (category) {
-            TokenCategory.LATEST_BOOSTED -> {
-                scanBoostedTokens()
-                screenModelScope.launch {
-                    scannerRepository.tokens
-                        .filter { it.isNotEmpty() }
-                        .first()
-                        .let { monitorAllTokenAddress() }
-                }
-            }
-
-            TokenCategory.MOST_ACTIVE_BOOSTED -> {
-                scanMostBoostedTokens()
-                screenModelScope.launch {
-                    scannerRepository.tokens
-                        .filter { it.isNotEmpty() }
-                        .first()
-                        .let { monitorAllTokenAddress() }
-                }
-            }
-
-            TokenCategory.LATEST -> {
-                scanTokens()
-                screenModelScope.launch {
-                    scannerRepository.tokens
-                        .filter { it.isNotEmpty() }
-                        .first()
-                        .let { monitorAllTokenAddress() }
-                }
-            }
-
-            TokenCategory.TRACKED -> {
-                stopAllScanning()
-                monitorAllTokenAddress()
-            }
+        screenModelScope.launch {
+            scannerRepository.getTokens(category)
         }
     }
 
     private fun stopAllScanning() {
-        monitorTokenAddressJob?.cancelAndNull()
-        tokenScanJob?.cancelAndNull()
-        boostedTokenScanJob?.cancelAndNull()
-        monitorTokenAddressJobTwo?.cancelAndNull()
-        monitorOrderJob?.cancelAndNull()
+        monitorTokenAddresses.stop()
     }
 
-    companion object {
-        private const val SCAN_DELAY = 5000L
-    }
 }
