@@ -24,6 +24,7 @@ fun BasicButton(
     text: String,
     textColor: Color = CurrentColors.onPrimary,
     onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = { onClick() },
@@ -31,7 +32,8 @@ fun BasicButton(
         shape = CurrentShapes.pill,
         border = BorderStroke(4.dp, CurrentColors.secondary),
         elevation = ButtonDefaults.elevation(16.dp, 24.dp,),
-        colors = AppButtonColors
+        colors = AppButtonColors,
+        enabled = enabled,
     ) {
         ButtonText(text = text, color = textColor)
     }

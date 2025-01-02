@@ -4,6 +4,8 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import org.adam.kryptobot.util.cancelAndNull
 import co.touchlab.kermit.Logger
+import com.zhuinden.flowcombinetuplekt.combineStates
+import com.zhuinden.flowcombinetuplekt.combineTuple
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,30 +32,18 @@ class ScannerScreenModel(
 
     private val _dexFilter: MutableStateFlow<Set<Dex>> = MutableStateFlow(setOf())
     private val _chainFilter: MutableStateFlow<Set<Chain>> = MutableStateFlow(setOf())
+    private val _scanRunning: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
-    val uiState: StateFlow<ScannerScreenUiState> = combine(
+    val uiState: StateFlow<ScannerScreenUiState> = combineStates(
+        screenModelScope,
+        SharingStarted.WhileSubscribed(),
         latestDexPairs,
         ordersPaidForByTokenAddress,
-        _dexFilter,
         _chainFilter,
-    ) { latestDexPairs, orders, dexFilter, chainFilter ->
-        val filteredList = latestDexPairs.filterIf(dexFilter.isNotEmpty()) { pair ->
-            !dexFilter.any { dex -> dex.name.equals(pair.dexId, ignoreCase = true) }
-        }.filterIf(chainFilter.isNotEmpty()) { pair ->
-            !chainFilter.any { chain -> chain.name.equals(pair.chainId, ignoreCase = true) }
-        }
-        Logger.d("Chain list is $chainFilter")
-        Logger.d("Dex list is $dexFilter")
-        ScannerScreenUiState(
-            latestDexPairs = filteredList,
-            currentPaymentStatus = orders,
-            selectedChainFilters = chainFilter,
-            selectedDexFilters = dexFilter,
-        )
-    }.stateIn(
-        scope = screenModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ScannerScreenUiState()
+        _dexFilter,
+        _scanRunning,
+        selectedTokenCategory,
+        ::mapState
     )
 
     fun onEvent(event: ScannerScreenEvent) {
@@ -64,10 +54,12 @@ class ScannerScreenModel(
 
             is ScannerScreenEvent.OnTokenCategorySelected -> {
                 monitorTokenAddresses(event.category)
+                _scanRunning.value = true
             }
 
             ScannerScreenEvent.OnStopSelected -> {
                 monitorTokenAddresses.stop()
+                _scanRunning.value = false
             }
 
             is ScannerScreenEvent.OnChainFilterToggled -> {

@@ -68,6 +68,8 @@ kotlin {
                 implementation(libs.apollo.runtime)
                 implementation(libs.roboquant)
                 implementation(libs.sol4k)
+
+                implementation(libs.combineTuple)
             }
         }
 

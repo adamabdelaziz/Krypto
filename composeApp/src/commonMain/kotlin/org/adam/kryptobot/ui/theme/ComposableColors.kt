@@ -5,6 +5,7 @@ import androidx.compose.material.CheckboxColors
 import androidx.compose.material.CheckboxDefaults
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 val AppOutlinedTextFieldColors
     @Composable
@@ -24,5 +25,6 @@ val AppCheckboxColors
     @Composable
     get() = CheckboxDefaults.colors(
         checkedColor = LocalAppColors.current.primary,
-        uncheckedColor = LocalAppColors.current.onPrimary
+        uncheckedColor = LocalAppColors.current.onPrimary,
+        checkmarkColor = LocalAppColors.current.secondary,
     )

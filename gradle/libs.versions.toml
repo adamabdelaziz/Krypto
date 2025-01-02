@@ -56,7 +56,7 @@ androidx-lifecycle-runtime-compose-desktop = { group = "androidx.lifecycle", nam
 kamel = { module = "media.kamel:kamel-image", version.ref = "kamel" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit"}
 sol4k = { module = "org.sol4k:sol4k", version.ref = "sol4k"}
-
+combineTuple = {module = "com.github.Zhuinden:flow-combinetuple-kt", version.ref = "flowCombine"}
 composeIcons-feather = { module = "br.com.devsrsouza.compose.icons:feather", version.ref = "composeIcons" }
 
 # Roboquant
