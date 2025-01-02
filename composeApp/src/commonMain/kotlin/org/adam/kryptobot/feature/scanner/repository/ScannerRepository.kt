@@ -7,8 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import org.adam.kryptobot.feature.scanner.data.DexScannerApi
@@ -18,8 +16,6 @@ import org.adam.kryptobot.feature.scanner.data.dto.toToken
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.data.model.Token
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
-import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
-import org.adam.kryptobot.ui.theme.AppShapes
 import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 
 interface ScannerRepository {
@@ -70,19 +66,19 @@ class ScannerRepositoryImpl(
             dexPairs.filter {
                 when (selectedCategory) {
                     TokenCategory.LATEST_BOOSTED -> {
-                        latestBoostedPairIds.contains(it.baseToken?.address)
+                        latestBoostedTokenAddresses.contains(it.baseToken?.address)
                     }
 
                     TokenCategory.MOST_ACTIVE_BOOSTED -> {
-                        mostActiveBoostedPairIds.contains(it.baseToken?.address)
+                        mostActiveBoostedTokenAddresses.contains(it.baseToken?.address)
                     }
 
                     TokenCategory.LATEST -> {
-                        latestPairIds.contains(it.baseToken?.address)
+                        latestTokenAddresses.contains(it.baseToken?.address)
                     }
 
                     else -> {
-                        trackedPairIds.contains(it.baseToken?.address)
+                        trackedTokenAddresses.contains(it.baseToken?.address)
                     }
                 }
             }
@@ -103,10 +99,10 @@ class ScannerRepositoryImpl(
 
     private val initialPairs = mutableMapOf<String, DexPair>()
 
-    private val trackedPairIds = mutableSetOf<String>()
-    private val latestBoostedPairIds = mutableSetOf<String>()
-    private val mostActiveBoostedPairIds = mutableSetOf<String>()
-    private val latestPairIds = mutableSetOf<String>()
+    private val trackedTokenAddresses = mutableSetOf<String>()
+    private val latestBoostedTokenAddresses = mutableSetOf<String>()
+    private val mostActiveBoostedTokenAddresses = mutableSetOf<String>()
+    private val latestTokenAddresses = mutableSetOf<String>()
 
     override suspend fun getTokens(tokenCategory: TokenCategory) {
         withContext(Dispatchers.IO) {
@@ -116,17 +112,17 @@ class ScannerRepositoryImpl(
                 when (tokenCategory) {
                     TokenCategory.LATEST_BOOSTED -> {
                         response = api.getLatestBoostedTokens().map { it.toToken() }
-                        latestBoostedPairIds.addAll(response.map { it.tokenAddress })
+                        latestBoostedTokenAddresses.addAll(response.map { it.tokenAddress })
                     }
 
                     TokenCategory.MOST_ACTIVE_BOOSTED -> {
                         response = api.getMostActiveBoostedTokens().map { it.toToken() }
-                        mostActiveBoostedPairIds.addAll(response.map { it.tokenAddress })
+                        mostActiveBoostedTokenAddresses.addAll(response.map { it.tokenAddress })
                     }
 
                     TokenCategory.LATEST -> {
                         response = api.getLatestTokens().map { it.toToken() }
-                        latestPairIds.addAll(response.map { it.tokenAddress })
+                        latestTokenAddresses.addAll(response.map { it.tokenAddress })
                     }
                 }
 
@@ -150,19 +146,19 @@ class ScannerRepositoryImpl(
             try {
                 val addresses = when (category) {
                     TokenCategory.LATEST_BOOSTED -> {
-                        _tokens.value.filter { latestBoostedPairIds.contains(it.tokenAddress) }
+                        _tokens.value.filter { latestBoostedTokenAddresses.contains(it.tokenAddress) }
                     }
 
                     TokenCategory.MOST_ACTIVE_BOOSTED -> {
-                        _tokens.value.filter { mostActiveBoostedPairIds.contains(it.tokenAddress) }
+                        _tokens.value.filter { mostActiveBoostedTokenAddresses.contains(it.tokenAddress) }
                     }
 
                     TokenCategory.LATEST -> {
-                        _tokens.value.filter { latestPairIds.contains(it.tokenAddress) }
+                        _tokens.value.filter { latestTokenAddresses.contains(it.tokenAddress) }
                     }
 
                     else -> {
-                        _tokens.value.filter { trackedPairIds.contains(it.tokenAddress) }
+                        _tokens.value.filter { trackedTokenAddresses.contains(it.tokenAddress) }
                     }
                 }.map { it.tokenAddress }.distinct().joinToString(",")
 
@@ -237,10 +233,10 @@ class ScannerRepositoryImpl(
 
     override fun trackPair(dexPair: DexPair) {
         dexPair.baseToken?.address?.let {
-            if (trackedPairIds.contains(it)) {
-                trackedPairIds.remove(it)
+            if (trackedTokenAddresses.contains(it)) {
+                trackedTokenAddresses.remove(it)
             } else {
-                trackedPairIds.add(it)
+                trackedTokenAddresses.add(it)
             }
         }
     }
