@@ -147,18 +147,22 @@ class ScannerRepositoryImpl(
                 val addresses = when (category) {
                     TokenCategory.LATEST_BOOSTED -> {
                         _tokens.value.filter { latestBoostedTokenAddresses.contains(it.tokenAddress) }
+                            .take(29)
                     }
 
                     TokenCategory.MOST_ACTIVE_BOOSTED -> {
                         _tokens.value.filter { mostActiveBoostedTokenAddresses.contains(it.tokenAddress) }
+                            .take(29)
                     }
 
                     TokenCategory.LATEST -> {
                         _tokens.value.filter { latestTokenAddresses.contains(it.tokenAddress) }
+                            .take(29)
                     }
 
                     else -> {
                         _tokens.value.filter { trackedTokenAddresses.contains(it.tokenAddress) }
+                            .take(29)
                     }
                 }.map { it.tokenAddress }.distinct().joinToString(",")
 
@@ -188,7 +192,7 @@ class ScannerRepositoryImpl(
                                 Pair address is likely real unique identifier but likely should filter all quote tokens that arent SOL i.e address == So11111111111111111111111111111111111111112
                                 Multiple different pair addresses can exist for same base token/quote token pair since there are multiple liquditiy pools so tracking all of them and doing it by coin for now
                                  */
-                               // Logger.d("${pair.chainId} ${pair.dexId} ${pair.pairAddress} | ${pair.baseToken?.address} ${pair.baseToken?.symbol} | ${pair.quoteToken?.address} ${pair.quoteToken?.symbol}")
+                                // Logger.d("${pair.chainId} ${pair.dexId} ${pair.pairAddress} | ${pair.baseToken?.address} ${pair.baseToken?.symbol} | ${pair.quoteToken?.address} ${pair.quoteToken?.symbol}")
                             }
                         }
                         Logger.d("DEx Size is ${oldList.size}")

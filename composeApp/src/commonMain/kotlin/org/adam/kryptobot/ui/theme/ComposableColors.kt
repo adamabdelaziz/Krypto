@@ -21,6 +21,13 @@ val AppButtonColors
         backgroundColor = LocalAppColors.current.primary,
         contentColor = LocalAppColors.current.onPrimary
     )
+val SelectedButtonColors
+    @Composable
+    get() = ButtonDefaults.buttonColors(
+        backgroundColor = LocalAppColors.current.secondary,
+        contentColor = LocalAppColors.current.onSecondary
+    )
+
 val AppCheckboxColors
     @Composable
     get() = CheckboxDefaults.colors(

@@ -25,7 +25,9 @@ import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.BasicCheckbox
 import org.adam.kryptobot.ui.components.PairInfoCard
+import org.adam.kryptobot.ui.theme.AppButtonColors
 import org.adam.kryptobot.ui.theme.LocalAppColors
+import org.adam.kryptobot.ui.theme.SelectedButtonColors
 import org.adam.kryptobot.util.titleCase
 
 class ScannerScreen : Screen {
@@ -48,7 +50,11 @@ class ScannerScreen : Screen {
             verticalArrangement = Arrangement.Top,
         ) {
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
-                BasicButton(onClick = { onEvent(ScannerScreenEvent.OnStopSelected) }, text = "Stop")
+                BasicButton(
+                    onClick = { onEvent(ScannerScreenEvent.OnStopSelected) },
+                    text = "Stop",
+                    enabled = state.isScanRunning
+                )
             }
 
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
@@ -56,18 +62,26 @@ class ScannerScreen : Screen {
                     BasicButton(
                         modifier = Modifier.padding(end = 8.dp),
                         onClick = { onEvent(ScannerScreenEvent.OnTokenCategorySelected(category)) },
-                        text = category.toString()
+                        text = category.toString(),
+                        selected = category == state.selectedCategory,
                     )
                 }
                 BasicButton(
                     modifier = Modifier.padding(end = 8.dp),
                     onClick = { onEvent(ScannerScreenEvent.OnTokenCategorySelected(null)) },
-                    text = "Tracked"
+                    text = "Tracked",
+                    selected = state.selectedCategory == null,
                 )
             }
 
-            Row(modifier = Modifier.padding(bottom = 8.dp).background(LocalAppColors.current.primary)) {
-                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(
+                modifier = Modifier.padding(bottom = 8.dp)
+                    .background(LocalAppColors.current.primary)
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Row(modifier = Modifier.padding(bottom = 8.dp)) {
                         Chain.entries.forEach { chain ->
                             BasicCheckbox(
@@ -91,7 +105,10 @@ class ScannerScreen : Screen {
                         )
                     }
                 }
-                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Row(modifier = Modifier.padding(bottom = 8.dp)) {
                         Dex.entries.forEach { dex ->
                             BasicCheckbox(
