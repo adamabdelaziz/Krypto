@@ -28,8 +28,8 @@ import org.adam.kryptobot.ui.components.snackbar.AppSnackbar
 import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
 
 @Composable
-fun BottomNavScaffold(
-    snackbarManager: SnackbarManager = SnackbarManager
+fun AppScaffold(
+    snackbarManager: SnackbarManager
 ) {
     val scaffoldState = rememberScaffoldState()
 
@@ -37,7 +37,7 @@ fun BottomNavScaffold(
         snackbarManager.messages.collect { snackbarMessage ->
             val result = scaffoldState.snackbarHostState.showSnackbar(
                 message = snackbarMessage.message,
-                actionLabel = snackbarMessage.actionLabel
+                actionLabel = snackbarMessage.actionLabel,
             )
             when (result) {
                 SnackbarResult.ActionPerformed -> {

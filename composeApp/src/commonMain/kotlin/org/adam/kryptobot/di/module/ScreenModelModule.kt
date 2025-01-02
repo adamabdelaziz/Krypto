@@ -1,4 +1,4 @@
-package org.adam.kryptobot.di
+package org.adam.kryptobot.di.module
 
 import org.adam.kryptobot.feature.scanner.screens.ScannerScreenModel
 import org.adam.kryptobot.feature.swapper.screens.SwapperScreenModel

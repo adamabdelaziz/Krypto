@@ -1,5 +1,6 @@
-package org.adam.kryptobot.di
+package org.adam.kryptobot.di.module
 
+import org.adam.kryptobot.di.IO_SCOPE
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCaseImpl
 import org.koin.core.qualifier.named
@@ -9,7 +10,8 @@ val useCaseModule = module {
     single<MonitorTokenAddressesUseCase> {
         MonitorTokenAddressesUseCaseImpl(
             scannerRepository = get(),
-            coroutineScope = get(named("IoScope")),
+            coroutineScope = get(named(IO_SCOPE)),
+            snackbarManager = get(),
         )
     }
 }

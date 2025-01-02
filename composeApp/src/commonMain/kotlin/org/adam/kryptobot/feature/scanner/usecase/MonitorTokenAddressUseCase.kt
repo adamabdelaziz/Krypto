@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
+import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
 import org.adam.kryptobot.util.cancelAndNull
 
 interface MonitorTokenAddressesUseCase {
@@ -17,7 +18,8 @@ interface MonitorTokenAddressesUseCase {
 
 class MonitorTokenAddressesUseCaseImpl(
     private val scannerRepository: ScannerRepository,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val snackbarManager: SnackbarManager,
 ): MonitorTokenAddressesUseCase {
     companion object {
         private const val SCAN_DELAY = 5000L

@@ -16,6 +16,7 @@ import org.adam.kryptobot.feature.scanner.data.dto.toToken
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.data.model.Token
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
+import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
 import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 
 interface ScannerRepository {
@@ -37,6 +38,7 @@ interface ScannerRepository {
 class ScannerRepositoryImpl(
     private val api: DexScannerApi,
     private val stateFlowScope: CoroutineScope,
+    private val snackbarManager: SnackbarManager,
 ) : ScannerRepository {
 
     private val _tokens: MutableStateFlow<List<Token>> =

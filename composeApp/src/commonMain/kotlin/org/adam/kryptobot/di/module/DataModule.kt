@@ -1,4 +1,4 @@
-package org.adam.kryptobot.di
+package org.adam.kryptobot.di.module
 
 import org.adam.kryptobot.feature.scanner.data.DexScannerApi
 import org.adam.kryptobot.feature.scanner.data.KtorDexScannerApi

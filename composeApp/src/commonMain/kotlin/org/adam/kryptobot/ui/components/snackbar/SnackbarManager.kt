@@ -1,19 +1,35 @@
 package org.adam.kryptobot.ui.components.snackbar
 
+import androidx.compose.material.SnackbarDuration
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
+import kotlin.time.Duration
 
-object SnackbarManager {
-    private val _messages = MutableSharedFlow<SnackbarMessage>()
-    val messages: SharedFlow<SnackbarMessage> = _messages
-
-    suspend fun showMessage(
+interface SnackbarManager {
+    val messages: SharedFlow<SnackbarMessage>
+    fun showMessage(
         message: String,
         actionLabel: String? = null,
         onActionPerformed: () -> Unit = {},
-        onDismissed: () -> Unit = {}
+        onDismissed: () -> Unit = {},
+    )
+}
+
+class SnackbarManagerImpl(private val snackScope: CoroutineScope) : SnackbarManager {
+    private val _messages = MutableSharedFlow<SnackbarMessage>()
+    override val messages: SharedFlow<SnackbarMessage> = _messages
+
+    override fun showMessage(
+        message: String,
+        actionLabel: String?,
+        onActionPerformed: () -> Unit,
+        onDismissed: () -> Unit,
     ) {
-        _messages.emit(SnackbarMessage(message, actionLabel, onActionPerformed, onDismissed))
+        snackScope.launch {
+            _messages.emit(SnackbarMessage(message, actionLabel, onActionPerformed, onDismissed))
+        }
     }
 }
 
