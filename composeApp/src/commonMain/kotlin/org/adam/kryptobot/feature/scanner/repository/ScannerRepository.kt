@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -17,6 +18,9 @@ import org.adam.kryptobot.feature.scanner.data.dto.toToken
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.data.model.Token
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
+import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
+import org.adam.kryptobot.ui.theme.AppShapes
+import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 
 interface ScannerRepository {
     suspend fun getTokens(tokenCategory: TokenCategory)
@@ -59,9 +63,12 @@ class ScannerRepositoryImpl(
     private val _latestDexPairs: MutableStateFlow<List<DexPair>> =
         MutableStateFlow(listOf())
     override val latestDexPairs: StateFlow<List<DexPair>> =
-        _latestDexPairs.map { dexPairs ->
+        combine(
+            _latestDexPairs,
+            _selectedTokenCategory
+        ) { dexPairs, selectedCategory ->
             dexPairs.filter {
-                when (_selectedTokenCategory.value) {
+                when (selectedCategory) {
                     TokenCategory.LATEST_BOOSTED -> {
                         latestBoostedPairIds.contains(it.baseToken?.address)
                     }
@@ -175,17 +182,24 @@ class ScannerRepositoryImpl(
                                     if (!initialPairs.containsKey(key) && key != null) {
                                         initialPairs[key] = pair
                                     }
-
-                                    oldList.removeIf { it.pairAddress == pair.pairAddress }
                                 }
+
+                                oldList.removeIf { it.pairAddress == pair.pairAddress }
                                 oldList.add(pair)
+                                /*
+                                Quote token is SOL/USDC/WETH etc
+                                Base token is shit coin
+                                Pair address is likely real unique identifier but likely should filter all quote tokens that arent SOL i.e address == So11111111111111111111111111111111111111112
+                                 */
+                                Logger.d("${pair.chainId} ${pair.dexId} ${pair.pairAddress} | ${pair.baseToken?.address} ${pair.baseToken?.symbol} | ${pair.quoteToken?.address} ${pair.quoteToken?.symbol}")
                             }
                         }
                         Logger.d("DEx Size is ${oldList.size}")
+
                         _latestDexPairs.value =
-                            oldList.distinctBy { it.pairAddress }.sortedBy { pair ->
-                                pair.priceChangeSinceScanned
-                            }.reversed()
+                            oldList.toList().distinctBy { it.pairAddress }
+                                .sortedBy { it.priceChangeSinceScanned }.reversed()
+                                .filter { it.quoteToken?.address == SOLANA_MINT_ADDRESS }
                     }
                 }
             } catch (e: Exception) {
