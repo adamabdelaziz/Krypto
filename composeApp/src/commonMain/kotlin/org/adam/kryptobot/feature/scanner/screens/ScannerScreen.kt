@@ -63,6 +63,11 @@ class ScannerScreen : Screen {
                         text = category.toString()
                     )
                 }
+                BasicButton(
+                    modifier = Modifier.padding(end = 8.dp),
+                    onClick = { onEvent(ScannerScreenEvent.OnTokenCategorySelected(null)) },
+                    text = "Tracked"
+                )
             }
 
             LazyColumn(modifier = Modifier.fillMaxWidth()) {

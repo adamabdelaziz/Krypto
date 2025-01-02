@@ -8,5 +8,5 @@ sealed class ScannerScreenEvent {
     data object OnStopSelected: ScannerScreenEvent()
 
     class OnTokenAddressSelected(val pair: DexPair): ScannerScreenEvent()
-    class OnTokenCategorySelected(val category: TokenCategory): ScannerScreenEvent()
+    class OnTokenCategorySelected(val category: TokenCategory?): ScannerScreenEvent()
 }

@@ -10,5 +10,4 @@ import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 data class ScannerScreenUiState(
     val latestDexPairs: List<DexPair> = emptyList(),
     val currentPaymentStatus: List<PaymentStatusDto> = emptyList(),
-    val selectedTokenCategory: TokenCategory = TokenCategory.LATEST,
 )

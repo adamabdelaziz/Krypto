@@ -24,10 +24,9 @@ class SwapperScreenModel(
         swapperRepository.currentSwapInstructions,
         swapperRepository.currentSwapResponse,
         ) { tokens, quote, swapInstructions, swapResponse, ->
-        val pairToShow = tokens.values.flatten().firstOrNull { it.beingTracked }
         SwapperScreenUiState(
             quote = quote,
-            pair = pairToShow,
+            pair = null,
             swapInstructions = swapInstructions,
             swapResponse = swapResponse,
         )

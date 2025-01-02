@@ -1,4 +1,4 @@
-package org.adam.kryptobot.ui.components
+package org.adam.kryptobot.ui
 
 import WalletTab
 import androidx.compose.foundation.layout.RowScope

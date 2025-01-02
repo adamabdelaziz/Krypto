@@ -6,34 +6,32 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import org.adam.kryptobot.feature.scanner.data.DexScannerApi
-import org.adam.kryptobot.feature.scanner.data.dto.BoostedTokenDto
-import org.adam.kryptobot.feature.scanner.data.dto.PairDto
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
-import org.adam.kryptobot.feature.scanner.data.dto.LatestTokenDto
 import org.adam.kryptobot.feature.scanner.data.dto.toDexPair
 import org.adam.kryptobot.feature.scanner.data.dto.toToken
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.data.model.Token
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
-import org.hipparchus.analysis.function.Log
 
 interface ScannerRepository {
     suspend fun getTokens(tokenCategory: TokenCategory)
 
-    suspend fun getDexPairsByAddressList(category: TokenCategory) // This is supposed to be multiple comma separated token addresses
+    suspend fun getDexPairsByAddressList(category: TokenCategory?) // This is supposed to be multiple comma separated token addresses
     suspend fun getDexPairsByChainAndAddress(chainId: String, tokenAddress: String)
     suspend fun getOrdersPaidFor(chainId: String, tokenAddress: String)
 
     fun trackPair(dexPair: DexPair)
+    fun changeCategory(tokenCategory: TokenCategory?)
 
-    //TODO make a wrapper for DTO and then map to TokenCategory
-    val tokens: StateFlow<Map<TokenCategory, List<Token>>>
-
-    val latestDexPairs: StateFlow<Map<TokenCategory, List<DexPair>>>
+    val tokens: StateFlow<List<Token>>
+    val latestDexPairs: StateFlow<List<DexPair>>
     val ordersPaidForByTokenAddress: StateFlow<List<PaymentStatusDto>>
+    val selectedTokenCategory: StateFlow<TokenCategory?>
 }
 
 class ScannerRepositoryImpl(
@@ -41,19 +39,47 @@ class ScannerRepositoryImpl(
     private val stateFlowScope: CoroutineScope,
 ) : ScannerRepository {
 
-    private val _tokens: MutableStateFlow<Map<TokenCategory, List<Token>>> =
-        MutableStateFlow(mapOf())
-    override val tokens: StateFlow<Map<TokenCategory, List<Token>>> =
+    private val _tokens: MutableStateFlow<List<Token>> =
+        MutableStateFlow(listOf())
+    override val tokens: StateFlow<List<Token>> =
         _tokens.stateIn(
             scope = stateFlowScope,
             initialValue = _tokens.value,
             started = SharingStarted.WhileSubscribed(5000),
         )
+    private val _selectedTokenCategory: MutableStateFlow<TokenCategory?> =
+        MutableStateFlow(TokenCategory.MOST_ACTIVE_BOOSTED)
+    override val selectedTokenCategory: StateFlow<TokenCategory?> =
+        _selectedTokenCategory.stateIn(
+            scope = stateFlowScope,
+            initialValue = _selectedTokenCategory.value,
+            started = SharingStarted.WhileSubscribed(5000),
+        )
 
-    private val _latestDexPairs: MutableStateFlow<Map<TokenCategory, List<DexPair>>> =
-        MutableStateFlow(mapOf())
-    override val latestDexPairs: StateFlow<Map<TokenCategory, List<DexPair>>> =
-        _latestDexPairs.stateIn(
+    private val _latestDexPairs: MutableStateFlow<List<DexPair>> =
+        MutableStateFlow(listOf())
+    override val latestDexPairs: StateFlow<List<DexPair>> =
+        _latestDexPairs.map { dexPairs ->
+            dexPairs.filter {
+                when (_selectedTokenCategory.value) {
+                    TokenCategory.LATEST_BOOSTED -> {
+                        latestBoostedPairIds.contains(it.baseToken?.address)
+                    }
+
+                    TokenCategory.MOST_ACTIVE_BOOSTED -> {
+                        mostActiveBoostedPairIds.contains(it.baseToken?.address)
+                    }
+
+                    TokenCategory.LATEST -> {
+                        latestPairIds.contains(it.baseToken?.address)
+                    }
+
+                    else -> {
+                        trackedPairIds.contains(it.baseToken?.address)
+                    }
+                }
+            }
+        }.stateIn(
             scope = stateFlowScope,
             initialValue = _latestDexPairs.value,
             started = SharingStarted.WhileSubscribed(5000),
@@ -68,64 +94,98 @@ class ScannerRepositoryImpl(
             started = SharingStarted.WhileSubscribed(5000),
         )
 
-    private val initialPairs: MutableMap<String, DexPair> = mutableMapOf()
+    private val initialPairs = mutableMapOf<String, DexPair>()
+
+    private val trackedPairIds = mutableSetOf<String>()
+    private val latestBoostedPairIds = mutableSetOf<String>()
+    private val mostActiveBoostedPairIds = mutableSetOf<String>()
+    private val latestPairIds = mutableSetOf<String>()
 
     override suspend fun getTokens(tokenCategory: TokenCategory) {
         withContext(Dispatchers.IO) {
             try {
-                val response = when (tokenCategory) {
-                    TokenCategory.LATEST_BOOSTED -> api.getLatestBoostedTokens()
-                        .map { it.toToken() }
+                val response: List<Token>
 
-                    TokenCategory.MOST_ACTIVE_BOOSTED -> api.getMostActiveBoostedTokens()
-                        .map { it.toToken() }
+                when (tokenCategory) {
+                    TokenCategory.LATEST_BOOSTED -> {
+                        response = api.getLatestBoostedTokens().map { it.toToken() }
+                        latestBoostedPairIds.addAll(response.map { it.tokenAddress })
+                    }
 
-                    TokenCategory.LATEST -> api.getLatestTokens().map { it.toToken() }
-                    else -> listOf()
+                    TokenCategory.MOST_ACTIVE_BOOSTED -> {
+                        response = api.getMostActiveBoostedTokens().map { it.toToken() }
+                        mostActiveBoostedPairIds.addAll(response.map { it.tokenAddress })
+                    }
+
+                    TokenCategory.LATEST -> {
+                        response = api.getLatestTokens().map { it.toToken() }
+                        latestPairIds.addAll(response.map { it.tokenAddress })
+                    }
                 }
-                val map = _tokens.value.toMutableMap()
-                map[tokenCategory] = response
-                _tokens.value = map.toMap()
+
+                val updatedTokens = _tokens.value.toMutableList()
+
+                response.forEach { newToken ->
+                    updatedTokens.removeIf { it.tokenAddress == newToken.tokenAddress }
+                    updatedTokens.add(newToken)
+                }
+                Logger.d("Token size  is ${updatedTokens.size}")
+                _tokens.value = updatedTokens
+
             } catch (e: Exception) {
                 Logger.d(e.message ?: " Null Error Message for getLatestTokens()")
             }
         }
     }
 
-    override suspend fun getDexPairsByAddressList(category: TokenCategory) {
+    override suspend fun getDexPairsByAddressList(category: TokenCategory?) {
         withContext(Dispatchers.IO) {
             try {
-                val addresses =
-                    _tokens.value[category]?.map { it.tokenAddress }?.distinct()?.joinToString(",")
-                        ?: ""
+                val addresses = when (category) {
+                    TokenCategory.LATEST_BOOSTED -> {
+                        _tokens.value.filter { latestBoostedPairIds.contains(it.tokenAddress) }
+                    }
+
+                    TokenCategory.MOST_ACTIVE_BOOSTED -> {
+                        _tokens.value.filter { mostActiveBoostedPairIds.contains(it.tokenAddress) }
+                    }
+
+                    TokenCategory.LATEST -> {
+                        _tokens.value.filter { latestPairIds.contains(it.tokenAddress) }
+                    }
+
+                    else -> {
+                        _tokens.value.filter { trackedPairIds.contains(it.tokenAddress) }
+                    }
+                }.map { it.tokenAddress }.distinct().joinToString(",")
 
                 if (addresses.isNotEmpty()) {
                     val response = api.getPairsByTokenAddress(addresses)
 
                     response?.let {
-                        val currentMap = _latestDexPairs.value.toMutableMap()
-                        val oldList = currentMap[category] ?: listOf()
+                        val oldList = _latestDexPairs.value.toMutableList()
 
                         //Mapping and logic goes here.
                         val pairs =
                             it.pairs?.map { it.toDexPair(oldList, initialPairs.values.toList()) }
 
                         pairs?.let { fetchedPairs ->
-                            pairs.forEach { pair ->
-                                pair.pairAddress?.let {
-                                    if (!initialPairs.containsKey(pair.pairAddress)) {
-                                        initialPairs[pair.pairAddress] = pair
+                            fetchedPairs.forEach { pair ->
+                                pair.baseToken?.address.let { key ->
+                                    if (!initialPairs.containsKey(key) && key != null) {
+                                        initialPairs[key] = pair
                                     }
+
+                                    oldList.removeIf { it.pairAddress == pair.pairAddress }
                                 }
+                                oldList.add(pair)
                             }
-
-                            currentMap[category] =
-                                fetchedPairs.distinctBy { it.pairAddress }.sortedBy { pair ->
-                                    pair.liquidityMarketRatio
-                                }
-
-                            _latestDexPairs.value = currentMap.toMap()
                         }
+                        Logger.d("DEx Size is ${oldList.size}")
+                        _latestDexPairs.value =
+                            oldList.distinctBy { it.pairAddress }.sortedBy { pair ->
+                                pair.priceChangeSinceScanned
+                            }.reversed()
                     }
                 }
             } catch (e: Exception) {
@@ -162,15 +222,16 @@ class ScannerRepositoryImpl(
     }
 
     override fun trackPair(dexPair: DexPair) {
-        val updatedMap = _latestDexPairs.value.mapValues { (_, pairs) ->
-            pairs.map { pair ->
-                if (pair.pairAddress == dexPair.pairAddress) {
-                    pair.copy(beingTracked = !pair.beingTracked)
-                } else {
-                    pair
-                }
+        dexPair.baseToken?.address?.let {
+            if (trackedPairIds.contains(it)) {
+                trackedPairIds.remove(it)
+            } else {
+                trackedPairIds.add(it)
             }
         }
-        _latestDexPairs.value = updatedMap
+    }
+
+    override fun changeCategory(tokenCategory: TokenCategory?) {
+        _selectedTokenCategory.value = tokenCategory
     }
 }

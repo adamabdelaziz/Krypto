@@ -1,5 +1,6 @@
 package org.adam.kryptobot.feature.scanner.usecase
 
+import cafe.adriel.voyager.core.model.screenModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -9,18 +10,31 @@ import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.util.cancelAndNull
 
-class MonitorTokenAddressesUseCase(
+interface MonitorTokenAddressesUseCase {
+    operator fun invoke(tokenCategory: TokenCategory?)
+    fun stop()
+}
+
+class MonitorTokenAddressesUseCaseImpl(
     private val scannerRepository: ScannerRepository,
     private val coroutineScope: CoroutineScope
-) {
+): MonitorTokenAddressesUseCase {
     companion object {
         private const val SCAN_DELAY = 5000L
     }
 
     private var monitorJob: Job? = null
 
-    operator fun invoke(tokenCategory: TokenCategory) {
+    override operator fun invoke(tokenCategory: TokenCategory?) {
         stop()
+
+        scannerRepository.changeCategory(tokenCategory)
+        coroutineScope.launch {
+            tokenCategory?.let {
+                scannerRepository.getTokens(it)
+            }
+        }
+
         monitorJob = coroutineScope.launch {
             while (true) {
                 scannerRepository.getDexPairsByAddressList(tokenCategory)
@@ -29,7 +43,7 @@ class MonitorTokenAddressesUseCase(
         }
     }
 
-    fun stop() {
+    override fun stop() {
         monitorJob?.cancelAndNull()
     }
 }

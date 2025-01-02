@@ -22,20 +22,14 @@ import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
 class ScannerScreenModel(
     private val scannerRepository: ScannerRepository,
     private val monitorTokenAddresses: MonitorTokenAddressesUseCase,
-) : ScreenModel {
-
-    private val _selectedTokenCategory: MutableStateFlow<TokenCategory> =
-        MutableStateFlow(TokenCategory.MOST_ACTIVE_BOOSTED)
+) : ScreenModel, ScannerRepository by scannerRepository{
 
     val uiState: StateFlow<ScannerScreenUiState> = combine(
-        scannerRepository.latestDexPairs,
-        _selectedTokenCategory,
-        scannerRepository.ordersPaidForByTokenAddress
-    ) { latestDexPairs, selectedTokenCategory, orders ->
-        val pairs = latestDexPairs[selectedTokenCategory] ?: listOf()
+        latestDexPairs,
+        ordersPaidForByTokenAddress
+    ) { latestDexPairs, orders ->
         ScannerScreenUiState(
-            latestDexPairs = pairs,
-            selectedTokenCategory = selectedTokenCategory,
+            latestDexPairs = latestDexPairs,
             currentPaymentStatus = orders,
         )
     }.stateIn(
@@ -44,39 +38,19 @@ class ScannerScreenModel(
         initialValue = ScannerScreenUiState()
     )
 
-    init {
-        screenModelScope.launch {
-            _selectedTokenCategory.collect {
-                monitorTokenAddresses.invoke(it)
-            }
-        }
-    }
-
     fun onEvent(event: ScannerScreenEvent) {
         when (event) {
             is ScannerScreenEvent.OnTokenAddressSelected -> {
-                scannerRepository.trackPair(event.pair)
+                trackPair(event.pair)
             }
 
             is ScannerScreenEvent.OnTokenCategorySelected -> {
-                switchCategory(event.category)
+                monitorTokenAddresses(event.category)
             }
 
             ScannerScreenEvent.OnStopSelected -> {
-                stopAllScanning()
+                monitorTokenAddresses.stop()
             }
         }
     }
-
-    private fun switchCategory(category: TokenCategory) {
-        _selectedTokenCategory.value = category
-        screenModelScope.launch {
-            scannerRepository.getTokens(category)
-        }
-    }
-
-    private fun stopAllScanning() {
-        monitorTokenAddresses.stop()
-    }
-
 }
