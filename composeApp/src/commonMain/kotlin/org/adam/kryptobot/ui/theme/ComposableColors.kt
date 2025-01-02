@@ -1,6 +1,8 @@
 package org.adam.kryptobot.ui.theme
 
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CheckboxColors
+import androidx.compose.material.CheckboxDefaults
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
 
@@ -17,4 +19,10 @@ val AppButtonColors
     get() = ButtonDefaults.buttonColors(
         backgroundColor = LocalAppColors.current.primary,
         contentColor = LocalAppColors.current.onPrimary
+    )
+val AppCheckboxColors
+    @Composable
+    get() = CheckboxDefaults.colors(
+        checkedColor = LocalAppColors.current.primary,
+        uncheckedColor = LocalAppColors.current.onPrimary
     )

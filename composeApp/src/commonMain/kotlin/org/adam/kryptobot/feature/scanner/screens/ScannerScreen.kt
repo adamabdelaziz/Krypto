@@ -4,33 +4,29 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.adam.kryptobot.feature.scanner.enum.Chain
+import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.ui.components.BasicButton
+import org.adam.kryptobot.ui.components.BasicCheckbox
 import org.adam.kryptobot.ui.components.PairInfoCard
-import org.adam.kryptobot.ui.components.PaymentStatusCard
 import org.adam.kryptobot.ui.theme.LocalAppColors
+import org.adam.kryptobot.util.titleCase
 
 class ScannerScreen : Screen {
 
@@ -56,7 +52,7 @@ class ScannerScreen : Screen {
             }
 
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
-                for (category in TokenCategory.entries) {
+                TokenCategory.entries.forEach { category ->
                     BasicButton(
                         modifier = Modifier.padding(end = 8.dp),
                         onClick = { onEvent(ScannerScreenEvent.OnTokenCategorySelected(category)) },
@@ -68,6 +64,57 @@ class ScannerScreen : Screen {
                     onClick = { onEvent(ScannerScreenEvent.OnTokenCategorySelected(null)) },
                     text = "Tracked"
                 )
+            }
+
+            Row(modifier = Modifier.padding(bottom = 8.dp).background(LocalAppColors.current.primary)) {
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(modifier = Modifier.padding(bottom = 8.dp)) {
+                        Chain.entries.forEach { chain ->
+                            BasicCheckbox(
+                                text = chain.name.titleCase(),
+                                isChecked = state.selectedChainFilters.contains(chain),
+                                onCheckedChange = {
+                                    onEvent(
+                                        ScannerScreenEvent.OnChainFilterToggled(
+                                            chain
+                                        )
+                                    )
+                                },
+                            )
+                        }
+                    }
+                    Row {
+                        BasicButton(
+                            modifier = Modifier.padding(end = 8.dp),
+                            onClick = { onEvent(ScannerScreenEvent.OnChainFilterToggled(null)) },
+                            text = "Clear All"
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(modifier = Modifier.padding(bottom = 8.dp)) {
+                        Dex.entries.forEach { dex ->
+                            BasicCheckbox(
+                                text = dex.name.titleCase(),
+                                isChecked = state.selectedDexFilters.contains(dex),
+                                onCheckedChange = {
+                                    onEvent(
+                                        ScannerScreenEvent.OnDexFilterToggled(
+                                            dex
+                                        )
+                                    )
+                                },
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.padding(bottom = 8.dp)) {
+                        BasicButton(
+                            modifier = Modifier.padding(end = 8.dp),
+                            onClick = { onEvent(ScannerScreenEvent.OnDexFilterToggled(null)) },
+                            text = "Clear All"
+                        )
+                    }
+                }
             }
 
             LazyColumn(modifier = Modifier.fillMaxWidth()) {

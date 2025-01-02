@@ -186,8 +186,9 @@ class ScannerRepositoryImpl(
                                 Quote token is SOL/USDC/WETH etc
                                 Base token is shit coin
                                 Pair address is likely real unique identifier but likely should filter all quote tokens that arent SOL i.e address == So11111111111111111111111111111111111111112
+                                Multiple different pair addresses can exist for same base token/quote token pair since there are multiple liquditiy pools so tracking all of them and doing it by coin for now
                                  */
-                                Logger.d("${pair.chainId} ${pair.dexId} ${pair.pairAddress} | ${pair.baseToken?.address} ${pair.baseToken?.symbol} | ${pair.quoteToken?.address} ${pair.quoteToken?.symbol}")
+                               // Logger.d("${pair.chainId} ${pair.dexId} ${pair.pairAddress} | ${pair.baseToken?.address} ${pair.baseToken?.symbol} | ${pair.quoteToken?.address} ${pair.quoteToken?.symbol}")
                             }
                         }
                         Logger.d("DEx Size is ${oldList.size}")

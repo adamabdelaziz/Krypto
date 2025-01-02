@@ -15,22 +15,40 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import okhttp3.internal.filterList
+import org.adam.kryptobot.feature.scanner.enum.Chain
+import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
+import org.adam.kryptobot.util.filterIf
 
 class ScannerScreenModel(
     private val scannerRepository: ScannerRepository,
     private val monitorTokenAddresses: MonitorTokenAddressesUseCase,
-) : ScreenModel, ScannerRepository by scannerRepository{
+) : ScreenModel, ScannerRepository by scannerRepository {
+
+    private val _dexFilter: MutableStateFlow<Set<Dex>> = MutableStateFlow(setOf())
+    private val _chainFilter: MutableStateFlow<Set<Chain>> = MutableStateFlow(setOf())
 
     val uiState: StateFlow<ScannerScreenUiState> = combine(
         latestDexPairs,
-        ordersPaidForByTokenAddress
-    ) { latestDexPairs, orders ->
+        ordersPaidForByTokenAddress,
+        _dexFilter,
+        _chainFilter,
+    ) { latestDexPairs, orders, dexFilter, chainFilter ->
+        val filteredList = latestDexPairs.filterIf(dexFilter.isNotEmpty()) { pair ->
+            !dexFilter.any { dex -> dex.name.equals(pair.dexId, ignoreCase = true) }
+        }.filterIf(chainFilter.isNotEmpty()) { pair ->
+            !chainFilter.any { chain -> chain.name.equals(pair.chainId, ignoreCase = true) }
+        }
+        Logger.d("Chain list is $chainFilter")
+        Logger.d("Dex list is $dexFilter")
         ScannerScreenUiState(
-            latestDexPairs = latestDexPairs,
+            latestDexPairs = filteredList,
             currentPaymentStatus = orders,
+            selectedChainFilters = chainFilter,
+            selectedDexFilters = dexFilter,
         )
     }.stateIn(
         scope = screenModelScope,
@@ -50,6 +68,34 @@ class ScannerScreenModel(
 
             ScannerScreenEvent.OnStopSelected -> {
                 monitorTokenAddresses.stop()
+            }
+
+            is ScannerScreenEvent.OnChainFilterToggled -> {
+                val filterList = _chainFilter.value.toMutableSet()
+                event.chain?.let {
+                    if (filterList.contains(it)) {
+                        filterList.remove(it)
+                    } else {
+                        filterList.add(it)
+                    }
+                } ?: run {
+                    filterList.clear()
+                }
+                _chainFilter.value = filterList.toSet()
+            }
+
+            is ScannerScreenEvent.OnDexFilterToggled -> {
+                val filterList = _dexFilter.value.toMutableSet()
+                event.dex?.let {
+                    if (filterList.contains(it)) {
+                        filterList.remove(it)
+                    } else {
+                        filterList.add(it)
+                    }
+                } ?: run {
+                    filterList.clear()
+                }
+                _dexFilter.value = filterList.toSet()
             }
         }
     }
