@@ -17,6 +17,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.PairInfoCard
+import org.adam.kryptobot.ui.components.PairSwapCard
 import org.adam.kryptobot.ui.theme.LocalAppColors
 
 class SwapperScreen : Screen {
@@ -43,8 +44,8 @@ class SwapperScreen : Screen {
                 onClick = { onEvent(SwapperScreenEvent.OnGenerateDebugWalletClicked) },
                 text = "Generate Debug Wallet"
             )
-            state.pair?.let {
-                PairInfoCard(modifier = Modifier.padding(bottom = 8.dp), pair = it, onClick = {
+            state.pair.forEach {
+                PairSwapCard(modifier = Modifier.padding(bottom = 8.dp), pair = it, onClick = {
                     onEvent(SwapperScreenEvent.OnDexPairClicked(it))
                 })
             }

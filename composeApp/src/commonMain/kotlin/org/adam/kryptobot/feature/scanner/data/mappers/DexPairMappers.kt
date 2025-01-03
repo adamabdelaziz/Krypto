@@ -1,10 +1,9 @@
 package org.adam.kryptobot.feature.scanner.data.mappers
 
-import org.adam.kryptobot.feature.scanner.data.dto.Boosts
 import org.adam.kryptobot.feature.scanner.data.dto.PairDto
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
-import org.adam.kryptobot.feature.scanner.enum.Dex
-import org.adam.kryptobot.feature.scanner.ui.model.DexPairUiModel
+import org.adam.kryptobot.feature.scanner.ui.model.DexPairScanUiModel
+import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 
 fun PairDto.toDexPair(oldList: List<DexPair>, initialList: List<DexPair>): DexPair {
     val oldOne = oldList.firstOrNull { it.pairAddress == this.pairAddress }
@@ -72,8 +71,8 @@ fun PairDto.toDexPair(oldList: List<DexPair>, initialList: List<DexPair>): DexPa
     )
 }
 
-fun DexPair.toDexPairUiModel(isBeingTracked: Boolean): DexPairUiModel {
-    return DexPairUiModel(
+fun DexPair.toDexPairScanUiModel(isBeingTracked: Boolean): DexPairScanUiModel {
+    return DexPairScanUiModel(
         dexId = this.dexId,
         baseToken = this.baseToken,
         quoteToken = this.quoteToken,
@@ -89,6 +88,25 @@ fun DexPair.toDexPairUiModel(isBeingTracked: Boolean): DexPairUiModel {
         priceChangeSinceScanned = this.priceChangeSinceScanned,
         recentPriceChangeSinceScanned = this.recentPriceChangeSinceScanned,
         beingTracked = isBeingTracked,
+        liquidityMarketRatio = this.liquidityMarketRatio,
+    )
+}
+
+/*
+    Similar param above for if its being actively swapped
+ */
+fun DexPair.toDexPairSwapUiModel(): DexPairSwapUiModel {
+    return DexPairSwapUiModel(
+        dexId = this.dexId,
+        baseToken = this.baseToken,
+        quoteToken = this.quoteToken,
+        priceNative = this.priceNative,
+        priceUsd = this.priceUsd,
+        liquidity = this.liquidity,
+        marketCap = this.marketCap,
+        info = this.info,
+        priceChangeSinceScanned = this.priceChangeSinceScanned,
+        recentPriceChangeSinceScanned = this.recentPriceChangeSinceScanned,
         liquidityMarketRatio = this.liquidityMarketRatio,
     )
 }

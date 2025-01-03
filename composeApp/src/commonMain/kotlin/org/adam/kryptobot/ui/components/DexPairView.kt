@@ -1,6 +1,7 @@
 package org.adam.kryptobot.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,24 +11,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Card
-import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import compose.icons.FeatherIcons
-import compose.icons.feathericons.Check
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
 import org.adam.kryptobot.feature.scanner.data.dto.TxCount
-import org.adam.kryptobot.feature.scanner.ui.model.DexPairUiModel
+import org.adam.kryptobot.feature.scanner.ui.model.DexPairScanUiModel
+import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 import org.adam.kryptobot.ui.theme.CurrentColors
+import org.adam.kryptobot.ui.theme.CurrentShapes
+import org.adam.kryptobot.ui.theme.CurrentTypography
 import org.adam.kryptobot.util.formatToDollarString
 import org.adam.kryptobot.util.formatUnixTimestamp
 
 @Composable
-fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPairUiModel?, onClick: () -> Unit) {
+fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPairScanUiModel?, onClick: () -> Unit) {
     if (pair == null) {
         Text("No pair information available")
         return
@@ -299,5 +302,84 @@ fun PaymentStatusCard(modifier: Modifier = Modifier, paymentStatus: PaymentStatu
                 Text(formatUnixTimestamp(paymentStatus.paymentTimestamp))
             }
         }
+    }
+}
+
+@Composable
+fun PairSwapCard(modifier: Modifier = Modifier, pair: DexPairSwapUiModel, onClick: () -> Unit) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(CurrentShapes.medium)
+            .clickable {
+                onClick()
+            }
+            .padding(8.dp),
+        elevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                pair.baseToken?.let {
+                    Text(
+                        modifier = Modifier.padding(end = 24.dp),
+                        text = "${it.name} (${it.symbol})",
+                        style = CurrentTypography.h3
+                    )
+                }
+                Text(
+                    modifier = Modifier.padding(end = 16.dp),
+                    text = "${String.format("%.2f", pair.priceChangeSinceScanned)}%",
+                    style = CurrentTypography.h3
+                )
+                Text(
+                    modifier = Modifier.padding(end = 8.dp),
+                    text = "${String.format("%.2f", pair.recentPriceChangeSinceScanned)}%",
+                    style = CurrentTypography.h3
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    modifier = Modifier.padding(end = 16.dp),
+                    text = "Price: $${pair.priceUsd}",
+                    style = CurrentTypography.body1
+                )
+                Text(
+                    modifier = Modifier.padding(end = 8.dp),
+                    text = "Lamports: ${pair.priceNative}",
+                    style = CurrentTypography.body1
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    modifier = Modifier.padding(end = 24.dp),
+                    text = "Market Cap: ${pair.marketCap?.formatToDollarString()}",
+                    style = CurrentTypography.body1
+                )
+                Text(
+                    modifier = Modifier.padding(end = 24.dp),
+                    text = "Liquidity: $${pair.liquidity?.usd?.formatToDollarString()}",
+                    style = CurrentTypography.body1
+                )
+                Text(
+                    modifier = Modifier.padding(end = 8.dp),
+                    text = "Ratio: ${String.format("%.2f", pair.liquidityMarketRatio)}%",
+                    style = CurrentTypography.body1
+                )
+            }
+        }
+
     }
 }

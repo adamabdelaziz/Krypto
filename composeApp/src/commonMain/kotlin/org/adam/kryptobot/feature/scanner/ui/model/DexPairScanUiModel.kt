@@ -7,7 +7,7 @@ import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
 import org.adam.kryptobot.feature.scanner.data.dto.Transactions
 import org.adam.kryptobot.feature.scanner.data.dto.Volume
 
-data class DexPairUiModel(
+data class DexPairScanUiModel(
     val dexId: String? = null,
     val baseToken: TokenDto? = null,
     val quoteToken: TokenDto? = null,
