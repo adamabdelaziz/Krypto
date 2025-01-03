@@ -13,7 +13,7 @@ import org.koin.dsl.KoinAppDeclaration
 
 fun initKoin(config: KoinAppDeclaration? = null) {
     startKoin {
-        printLogger(Level.DEBUG)
+        //printLogger(Level.DEBUG)
         config?.invoke(this)
         modules(
             coroutineModule,

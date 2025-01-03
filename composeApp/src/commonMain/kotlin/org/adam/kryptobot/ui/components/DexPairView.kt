@@ -1,5 +1,6 @@
 package org.adam.kryptobot.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,15 +10,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Card
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import compose.icons.FeatherIcons
+import compose.icons.feathericons.Check
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
 import org.adam.kryptobot.feature.scanner.data.dto.TxCount
 import org.adam.kryptobot.feature.scanner.ui.model.DexPairUiModel
+import org.adam.kryptobot.ui.theme.CurrentColors
 import org.adam.kryptobot.util.formatToDollarString
 import org.adam.kryptobot.util.formatUnixTimestamp
 
@@ -37,7 +42,10 @@ fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPairUiModel?, onClick: 
             .padding(8.dp),
         elevation = 4.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.background(if (pair.beingTracked) CurrentColors.secondary else Color.White)
+                .padding(16.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween

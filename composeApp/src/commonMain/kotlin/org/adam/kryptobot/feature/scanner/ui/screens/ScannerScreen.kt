@@ -49,13 +49,11 @@ class ScannerScreen : Screen {
         ) {
             Row(modifier = Modifier.padding(bottom = 8.dp)) {
                 BasicButton(
+                    modifier = Modifier.padding(end = 8.dp),
                     onClick = { onEvent(ScannerScreenEvent.OnStopSelected) },
                     text = "Stop",
                     enabled = state.isScanRunning
                 )
-            }
-
-            Row(modifier = Modifier.padding(bottom = 8.dp)) {
                 TokenCategory.entries.forEach { category ->
                     BasicButton(
                         modifier = Modifier.padding(end = 8.dp),
