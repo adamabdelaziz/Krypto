@@ -1,4 +1,4 @@
-package org.adam.kryptobot.feature.swapper.screens
+package org.adam.kryptobot.feature.swapper.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
+import org.adam.kryptobot.feature.scanner.ui.model.DexPairUiModel
 import org.adam.kryptobot.feature.swapper.repository.SwapperRepository
 import org.adam.kryptobot.feature.wallet.repository.WalletRepository
 
@@ -62,7 +63,10 @@ class SwapperScreenModel(
         }
     }
 
-    private fun getQuote(dexPair: DexPair) {
+    /*
+        TODO: Actual function that takes parameters for getting quote
+     */
+    private fun getQuote(dexPair: DexPairUiModel) {
         screenModelScope.launch {
             swapperRepository.getQuote(
                 inputAddress = dexPair.quoteToken?.address ?: "",

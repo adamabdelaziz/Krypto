@@ -1,29 +1,15 @@
-package org.adam.kryptobot.feature.scanner.screens
+package org.adam.kryptobot.feature.scanner.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import org.adam.kryptobot.util.cancelAndNull
-import co.touchlab.kermit.Logger
 import com.zhuinden.flowcombinetuplekt.combineStates
-import com.zhuinden.flowcombinetuplekt.combineTuple
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import okhttp3.internal.filterList
 import org.adam.kryptobot.feature.scanner.enum.Chain
 import org.adam.kryptobot.feature.scanner.enum.Dex
-import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
-import org.adam.kryptobot.util.filterIf
 
 class ScannerScreenModel(
     private val scannerRepository: ScannerRepository,
@@ -43,13 +29,14 @@ class ScannerScreenModel(
         _dexFilter,
         _scanRunning,
         selectedTokenCategory,
-        ::mapState
+        trackedTokenAddresses,
+        ::mapScannerState
     )
 
     fun onEvent(event: ScannerScreenEvent) {
         when (event) {
             is ScannerScreenEvent.OnTokenAddressSelected -> {
-                trackPair(event.pair)
+                trackPair(event.pair.baseToken?.address)
             }
 
             is ScannerScreenEvent.OnTokenCategorySelected -> {

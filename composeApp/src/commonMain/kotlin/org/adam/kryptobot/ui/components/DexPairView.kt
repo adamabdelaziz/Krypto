@@ -1,44 +1,28 @@
 package org.adam.kryptobot.ui.components
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import org.adam.kryptobot.feature.scanner.data.dto.DexPairDto
-import org.adam.kryptobot.feature.scanner.data.dto.PairDto
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
 import org.adam.kryptobot.feature.scanner.data.dto.TxCount
-import org.adam.kryptobot.feature.scanner.data.model.DexPair
+import org.adam.kryptobot.feature.scanner.ui.model.DexPairUiModel
 import org.adam.kryptobot.util.formatToDollarString
 import org.adam.kryptobot.util.formatUnixTimestamp
 
 @Composable
-fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPair?, onClick: () -> Unit) {
+fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPairUiModel?, onClick: () -> Unit) {
     if (pair == null) {
         Text("No pair information available")
         return

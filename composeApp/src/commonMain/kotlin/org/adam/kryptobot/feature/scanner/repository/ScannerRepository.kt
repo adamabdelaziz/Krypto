@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import org.adam.kryptobot.feature.scanner.data.DexScannerApi
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
-import org.adam.kryptobot.feature.scanner.data.dto.toDexPair
 import org.adam.kryptobot.feature.scanner.data.dto.toToken
+import org.adam.kryptobot.feature.scanner.data.mappers.toDexPair
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.data.model.Token
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
@@ -26,9 +26,10 @@ interface ScannerRepository {
     suspend fun getDexPairsByChainAndAddress(chainId: String, tokenAddress: String)
     suspend fun getOrdersPaidFor(chainId: String, tokenAddress: String)
 
-    fun trackPair(dexPair: DexPair)
+    fun trackPair(dexPairAddress: String?)
     fun changeCategory(tokenCategory: TokenCategory?)
 
+    val trackedTokenAddresses: StateFlow<Set<String>>
     val tokens: StateFlow<List<Token>>
     val latestDexPairs: StateFlow<List<DexPair>>
     val ordersPaidForByTokenAddress: StateFlow<List<PaymentStatusDto>>
@@ -80,7 +81,7 @@ class ScannerRepositoryImpl(
                     }
 
                     else -> {
-                        trackedTokenAddresses.contains(it.baseToken?.address)
+                        trackedTokenAddresses.value.contains(it.baseToken?.address)
                     }
                 }
             }
@@ -101,7 +102,13 @@ class ScannerRepositoryImpl(
 
     private val initialPairs = mutableMapOf<String, DexPair>()
 
-    private val trackedTokenAddresses = mutableSetOf<String>()
+    private val _trackedTokenAddresses: MutableStateFlow<Set<String>> = MutableStateFlow(setOf())
+    override val trackedTokenAddresses = _trackedTokenAddresses.stateIn(
+        scope = stateFlowScope,
+        initialValue = _trackedTokenAddresses.value,
+        started = SharingStarted.WhileSubscribed(5000),
+    )
+
     private val latestBoostedTokenAddresses = mutableSetOf<String>()
     private val mostActiveBoostedTokenAddresses = mutableSetOf<String>()
     private val latestTokenAddresses = mutableSetOf<String>()
@@ -163,7 +170,7 @@ class ScannerRepositoryImpl(
                     }
 
                     else -> {
-                        _tokens.value.filter { trackedTokenAddresses.contains(it.tokenAddress) }
+                        _tokens.value.filter { _trackedTokenAddresses.value.contains(it.tokenAddress) }
                             .take(29)
                     }
                 }.map { it.tokenAddress }.distinct().joinToString(",")
@@ -238,13 +245,15 @@ class ScannerRepositoryImpl(
         }
     }
 
-    override fun trackPair(dexPair: DexPair) {
-        dexPair.baseToken?.address?.let {
-            if (trackedTokenAddresses.contains(it)) {
-                trackedTokenAddresses.remove(it)
+    override fun trackPair(dexPairAddress: String?) {
+        dexPairAddress?.let {
+            val trackedSet = _trackedTokenAddresses.value.toMutableList()
+            if (trackedSet.contains(it)) {
+                trackedSet.remove(it)
             } else {
-                trackedTokenAddresses.add(it)
+                trackedSet.add(it)
             }
+            _trackedTokenAddresses.value = trackedSet.toSet()
         }
     }
 

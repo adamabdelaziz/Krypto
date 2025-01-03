@@ -1,17 +1,16 @@
-package org.adam.kryptobot.feature.scanner.screens
+package org.adam.kryptobot.feature.scanner.ui.screens
 
-import org.adam.kryptobot.feature.scanner.data.dto.BoostedTokenDto
-import org.adam.kryptobot.feature.scanner.data.dto.PairDto
 import org.adam.kryptobot.feature.scanner.data.dto.PaymentStatusDto
-import org.adam.kryptobot.feature.scanner.data.dto.LatestTokenDto
+import org.adam.kryptobot.feature.scanner.data.mappers.toDexPairUiModel
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.enum.Chain
 import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
+import org.adam.kryptobot.feature.scanner.ui.model.DexPairUiModel
 import org.adam.kryptobot.util.filterIf
 
 data class ScannerScreenUiState(
-    val latestDexPairs: List<DexPair> = emptyList(),
+    val latestDexPairs: List<DexPairUiModel> = emptyList(),
     val currentPaymentStatus: List<PaymentStatusDto> = emptyList(),
     val selectedChainFilters: Set<Chain> = emptySet(),
     val selectedDexFilters: Set<Dex> = emptySet(),
@@ -19,18 +18,21 @@ data class ScannerScreenUiState(
     val selectedCategory: TokenCategory? = TokenCategory.MOST_ACTIVE_BOOSTED,
 )
 
-fun mapState(
+fun mapScannerState(
     dexPairs: List<DexPair>,
     orders: List<PaymentStatusDto>,
     chainFilter: Set<Chain>,
     dexFilter: Set<Dex>,
     isScanRunning: Boolean,
     selectedCategory: TokenCategory?,
+    trackedSet: Set<String>,
 ): ScannerScreenUiState {
     val filteredList = dexPairs.filterIf(dexFilter.isNotEmpty()) { pair ->
         !dexFilter.any { dex -> dex.name.equals(pair.dexId, ignoreCase = true) }
     }.filterIf(chainFilter.isNotEmpty()) { pair ->
         !chainFilter.any { chain -> chain.name.equals(pair.chainId, ignoreCase = true) }
+    }.map { pair ->
+        pair.toDexPairUiModel(trackedSet.contains(pair.baseToken?.address))
     }
 
     return ScannerScreenUiState(

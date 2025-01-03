@@ -1,4 +1,4 @@
-package org.adam.kryptobot.feature.scanner.screens
+package org.adam.kryptobot.feature.scanner.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,9 +25,7 @@ import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.BasicCheckbox
 import org.adam.kryptobot.ui.components.PairInfoCard
-import org.adam.kryptobot.ui.theme.AppButtonColors
 import org.adam.kryptobot.ui.theme.LocalAppColors
-import org.adam.kryptobot.ui.theme.SelectedButtonColors
 import org.adam.kryptobot.util.titleCase
 
 class ScannerScreen : Screen {

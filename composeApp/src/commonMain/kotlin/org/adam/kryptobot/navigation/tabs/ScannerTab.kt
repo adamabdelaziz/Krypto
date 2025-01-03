@@ -6,7 +6,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import cafe.adriel.voyager.transitions.SlideTransition
-import org.adam.kryptobot.feature.scanner.screens.ScannerScreen
+import org.adam.kryptobot.feature.scanner.ui.screens.ScannerScreen
 
 object ScannerTab : Tab {
 
