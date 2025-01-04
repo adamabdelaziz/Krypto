@@ -14,6 +14,7 @@ val screenModelsModule = module {
             swapperRepository = get(),
             scannerRepository = get(),
             walletRepository = get(),
+            monitorTokenAddressesUseCase = get(),
         )
     }
     factory {

@@ -4,25 +4,27 @@ import org.adam.kryptobot.feature.scanner.data.mappers.toDexPairSwapUiModel
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
+import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
+import org.adam.kryptobot.feature.swapper.data.model.TransactionStep
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 
 data class SwapperScreenUiState(
-    val quote: String? = null,
     val pair: List<DexPairSwapUiModel> = listOf(),
-    val swapInstructions: JupiterSwapInstructionsDto? = null,
-    val swapResponse: JupiterSwapResponseDto? = null,
+    val quoteParams: QuoteParamsConfig = QuoteParamsConfig(),
 )
 
 fun mapSwapScreenUiState(
-    quote: String? = null,
     pair: List<DexPair> = listOf(),
-    swapInstructions: JupiterSwapInstructionsDto? = null,
-    swapResponse: JupiterSwapResponseDto? = null,
-): SwapperScreenUiState {
+    trackedTokenAddresses: Set<String>,
+    selectedPair: DexPairSwapUiModel?,
+    quoteConfig: QuoteParamsConfig,
+    transactionSteps: Map<String, List<TransactionStep>>,
+    ): SwapperScreenUiState {
+    /*
+        TODO: Filter by tracked addresses and then add associated steps to each pair
+     */
     return SwapperScreenUiState(
-        quote = quote,
         pair = pair.map { it.toDexPairSwapUiModel() },
-        swapInstructions = swapInstructions,
-        swapResponse = swapResponse,
+        quoteParams = quoteConfig
     )
 }

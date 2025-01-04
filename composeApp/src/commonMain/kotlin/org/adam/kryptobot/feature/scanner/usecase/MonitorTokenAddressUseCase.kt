@@ -21,16 +21,12 @@ class MonitorTokenAddressesUseCaseImpl(
     private val coroutineScope: CoroutineScope,
     private val snackbarManager: SnackbarManager,
 ): MonitorTokenAddressesUseCase {
-    companion object {
-        private const val SCAN_DELAY = 5000L
-    }
-
     private var monitorJob: Job? = null
 
     override operator fun invoke(tokenCategory: TokenCategory?) {
         stop()
-
         scannerRepository.changeCategory(tokenCategory)
+
         coroutineScope.launch {
             tokenCategory?.let {
                 scannerRepository.getTokens(it)
@@ -47,5 +43,9 @@ class MonitorTokenAddressesUseCaseImpl(
 
     override fun stop() {
         monitorJob?.cancelAndNull()
+    }
+
+    companion object {
+        private const val SCAN_DELAY = 5000L
     }
 }

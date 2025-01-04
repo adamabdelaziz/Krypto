@@ -5,31 +5,17 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
-import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
-import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.double
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
-import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapWrapDto
-import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapWrapperDto
-import org.sol4k.PublicKey
-import org.sol4k.RpcUrl
-import kotlin.math.pow
 
 // download jupiter wallet
 

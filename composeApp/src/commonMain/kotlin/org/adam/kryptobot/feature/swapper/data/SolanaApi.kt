@@ -13,6 +13,7 @@ import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kryptobot.composeapp.generated.resources.Res
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
 import org.adam.kryptobot.util.decodeBase58
 import org.adam.kryptobot.util.encodeBase58
@@ -42,8 +43,7 @@ interface SolanaApi {
         instructions: String,
         rpcUrl: RpcUrl = RpcUrl.MAINNNET,
         commitment: Commitment = Commitment.FINALIZED,
-        simulation: Boolean = false,
-    )
+    ): Result<String>
 
     fun getMintDecimalsAmount(address: String): Int
 
@@ -76,14 +76,15 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         return balance
     }
 
-    @OptIn(ExperimentalEncodingApi::class)
+    /*
+      This is the one that works
+   */
     override fun performSwapTransaction(
         privateKey: String,
         instructions: String,
         rpcUrl: RpcUrl,
         commitment: Commitment,
-        simulation: Boolean,
-    ) {
+    ): Result<String> {
         val solanaClient = Connection(rpcUrl, commitment)
 
         val balance = getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
@@ -99,26 +100,14 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         transaction.sign(keypair)
         Logger.d("Signed transaction")
 
-        try {
-            if (simulation) {
-                when (val response = solanaClient.simulateTransaction(transaction)) {
-                    is TransactionSimulationError -> {
-                        Logger.d("Simulation error ${response.error}")
-                    }
-
-                    is TransactionSimulationSuccess -> {
-                        response.logs.forEach {
-                            Logger.d("Simulation log: $it")
-                        }
-                    }
-                }
-            } else {
-                val transactionSignature = solanaClient.sendTransaction(transaction)
-                Logger.d("Transaction successfully sent! Signature: $transactionSignature")
-            }
+        return try {
+            val transactionSignature = solanaClient.sendTransaction(transaction)
+            Logger.d("Transaction successfully sent! Signature: $transactionSignature")
+            Result.success(transactionSignature)
         } catch (e: Exception) {
             Logger.d("Transaction failed: ${e.message}")
             e.printStackTrace()
+            Result.failure(e)
         }
     }
 
