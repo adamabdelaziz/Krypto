@@ -33,11 +33,11 @@ fun BasicButton(
     selected: Boolean = false,
 ) {
     val colorsToUse = if (selected) {
-       SelectedButtonColors
+        SelectedButtonColors
     } else {
-       colors
+        colors
     }
-    val borderColorToUse = if(selected) {
+    val borderColorToUse = if (selected) {
         CurrentColors.primary
     } else {
         borderColor
@@ -47,7 +47,7 @@ fun BasicButton(
         modifier = modifier,
         shape = CurrentShapes.pill,
         border = BorderStroke(4.dp, borderColorToUse),
-        elevation = ButtonDefaults.elevation(16.dp, 24.dp,),
+        elevation = ButtonDefaults.elevation(16.dp, 24.dp),
         colors = colorsToUse,
         enabled = enabled,
     ) {
@@ -79,7 +79,6 @@ fun BasicCheckbox(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .padding(8.dp)
     ) {
         Checkbox(
             checked = isChecked,
@@ -87,6 +86,6 @@ fun BasicCheckbox(
             modifier = Modifier.padding(end = 8.dp),
             colors = AppCheckboxColors
         )
-        Text(text = text)
+        BasicText(text = text, color = CurrentColors.onBackground)
     }
 }

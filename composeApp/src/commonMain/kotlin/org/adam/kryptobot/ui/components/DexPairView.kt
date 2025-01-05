@@ -1,7 +1,6 @@
 package org.adam.kryptobot.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,7 +29,7 @@ import org.adam.kryptobot.util.formatToDollarString
 import org.adam.kryptobot.util.formatUnixTimestamp
 
 @Composable
-fun PairInfoCard(modifier: Modifier = Modifier, pair: DexPairScanUiModel?, onClick: () -> Unit) {
+fun PairScanCard(modifier: Modifier = Modifier, pair: DexPairScanUiModel?, onClick: () -> Unit) {
     if (pair == null) {
         Text("No pair information available")
         return
@@ -370,7 +369,7 @@ fun PairSwapCard(modifier: Modifier = Modifier, pair: DexPairSwapUiModel, onClic
                 )
                 Text(
                     modifier = Modifier.padding(end = 24.dp),
-                    text = "Liquidity: $${pair.liquidity?.usd?.formatToDollarString()}",
+                    text = "Liquidity: ${pair.liquidity?.usd?.formatToDollarString()}",
                     style = CurrentTypography.body1
                 )
                 Text(

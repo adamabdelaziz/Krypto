@@ -15,7 +15,7 @@ data class ScannerScreenUiState(
     val selectedChainFilters: Set<Chain> = emptySet(),
     val selectedDexFilters: Set<Dex> = emptySet(),
     val isScanRunning: Boolean = false,
-    val selectedCategory: TokenCategory? = TokenCategory.MOST_ACTIVE_BOOSTED,
+    val selectedCategory: TokenCategory? = TokenCategory.MostActiveBoosted,
 )
 
 fun mapScannerState(

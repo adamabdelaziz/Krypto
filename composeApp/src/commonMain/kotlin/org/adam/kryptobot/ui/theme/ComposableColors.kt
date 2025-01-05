@@ -13,6 +13,7 @@ val AppOutlinedTextFieldColors
         backgroundColor = LocalAppColors.current.secondary,
         focusedBorderColor = LocalAppColors.current.primary,
         focusedLabelColor = LocalAppColors.current.onPrimary,
+        textColor = LocalAppColors.current.onSecondary,
     )
 
 val AppButtonColors

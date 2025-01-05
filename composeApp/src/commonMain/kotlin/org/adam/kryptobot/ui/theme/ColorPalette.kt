@@ -52,5 +52,18 @@ val DarkColorsCute = AppColors(
     warning = CoralSunset,
     success = MintHaven
 )
-
-val LocalAppColors = staticCompositionLocalOf { DarkColorsCute }
+val DarkColorsPumpkin = AppColors(
+    primary = PumpkinSpice,
+    secondary = BurntSienna,
+    background = CharcoalBlack,
+    surface = DeepSlate,
+    error = EmberGlow,
+    onPrimary = Ivory,
+    onSecondary = Ivory,
+    onBackground = SoftWhite,
+    onSurface = SoftWhite,
+    onError = Ivory,
+    warning = HarvestGold,
+    success = ForestGreen
+)
+val LocalAppColors = staticCompositionLocalOf { DarkColorsPumpkin }

@@ -9,24 +9,30 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.swapper.data.JupiterSwapApi
 import org.adam.kryptobot.feature.swapper.data.SolanaApi
 import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
 import org.adam.kryptobot.feature.swapper.data.model.TransactionStep
 import org.adam.kryptobot.feature.swapper.enum.Status
+import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
 import kotlin.math.pow
 
 interface SwapperRepository {
     fun updateQuoteConfig(update: QuoteParamsConfig.() -> QuoteParamsConfig)
-
+    fun updateDexSelection(
+        dex: Dex,
+        addToDexes: Boolean,
+        currentConfig: QuoteParamsConfig
+    ): QuoteParamsConfig
     suspend fun getQuote(
         inputAddress: String,
         outputAddress: String,
         amount: Double,
         slippageBps: Int = 10000,
-        swapMode: String = "ExactOut",  // Default to ExactIn? ExactOut worked though
+        swapMode: String = SwapMode.ExactOut.name,
         dexes: List<String>? = null,
         excludeDexes: List<String>? = null,
         restrictIntermediateTokens: Boolean = false,
@@ -79,6 +85,24 @@ class SwapperRepositoryImpl(
 
     override fun updateQuoteConfig(update: QuoteParamsConfig.() -> QuoteParamsConfig) {
         _quoteConfig.value = _quoteConfig.value.update()
+    }
+
+    override fun updateDexSelection(
+        dex: Dex,
+        addToDexes: Boolean,
+        currentConfig: QuoteParamsConfig
+    ): QuoteParamsConfig {
+        return if (addToDexes) {
+            currentConfig.copy(
+                dexes = currentConfig.dexes + dex,
+                excludeDexes = currentConfig.excludeDexes - dex
+            )
+        } else {
+            currentConfig.copy(
+                dexes = currentConfig.dexes - dex,
+                excludeDexes = currentConfig.excludeDexes + dex
+            )
+        }
     }
 
     override suspend fun getQuote(

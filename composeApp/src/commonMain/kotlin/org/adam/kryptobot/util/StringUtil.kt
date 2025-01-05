@@ -29,3 +29,7 @@ fun String.titleCase(): String {
     return this.lowercase()
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 }
+
+fun Any?.toStringOrEmpty(): String {
+    return this?.toString() ?: ""
+}

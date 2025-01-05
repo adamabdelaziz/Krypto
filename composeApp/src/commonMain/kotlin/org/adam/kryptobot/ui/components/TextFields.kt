@@ -9,6 +9,8 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -21,7 +23,7 @@ import org.adam.kryptobot.ui.theme.CurrentShapes
 import org.adam.kryptobot.ui.theme.CurrentTypography
 
 @Composable
-fun ToggleableVisibilityField(
+fun PasswordTextField(
     modifier: Modifier = Modifier,
     text: String,
     onTextChanged: (String) -> Unit,
@@ -75,5 +77,20 @@ fun TextFieldLabel(
         ).padding(8.dp),
         text = text,
         style = CurrentTypography.body1,
+    )
+}
+
+@Composable
+fun BasicText(
+    modifier: Modifier = Modifier,
+    text: String,
+    color: Color = CurrentColors.onPrimary,
+    style: TextStyle = CurrentTypography.body1,
+) {
+    Text(
+        modifier = modifier,
+        text = text,
+        style = style,
+        color = color,
     )
 }

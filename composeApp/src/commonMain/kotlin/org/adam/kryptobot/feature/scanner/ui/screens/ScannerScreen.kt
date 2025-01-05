@@ -24,7 +24,7 @@ import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.BasicCheckbox
-import org.adam.kryptobot.ui.components.PairInfoCard
+import org.adam.kryptobot.ui.components.PairScanCard
 import org.adam.kryptobot.ui.theme.LocalAppColors
 import org.adam.kryptobot.util.titleCase
 
@@ -132,7 +132,7 @@ class ScannerScreen : Screen {
 
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(state.latestDexPairs) { pair ->
-                    PairInfoCard(pair = pair, onClick = {
+                    PairScanCard(pair = pair, onClick = {
                         onEvent(ScannerScreenEvent.OnTokenAddressSelected(pair))
                     })
                 }

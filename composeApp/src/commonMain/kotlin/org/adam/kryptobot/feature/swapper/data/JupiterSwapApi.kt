@@ -199,8 +199,5 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
         private const val GET_QUOTE_URL = "${BASE_API_URL}quote"
         private const val POST_SWAP_URL = "${BASE_API_URL}swap"
         private const val POST_SWAP_INSTRUCTIONS_URL = "${BASE_API_URL}swap-instructions"
-
-        const val EXACT_IN = "ExactIn"
-        const val EXACT_OUT = "ExactOut"
     }
 }

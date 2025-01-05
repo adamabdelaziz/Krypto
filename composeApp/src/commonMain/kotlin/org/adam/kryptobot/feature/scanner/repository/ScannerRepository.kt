@@ -51,7 +51,7 @@ class ScannerRepositoryImpl(
             started = SharingStarted.WhileSubscribed(5000),
         )
     private val _selectedTokenCategory: MutableStateFlow<TokenCategory?> =
-        MutableStateFlow(TokenCategory.MOST_ACTIVE_BOOSTED)
+        MutableStateFlow(TokenCategory.MostActiveBoosted)
     override val selectedTokenCategory: StateFlow<TokenCategory?> =
         _selectedTokenCategory.stateIn(
             scope = stateFlowScope,
@@ -68,15 +68,15 @@ class ScannerRepositoryImpl(
         ) { dexPairs, selectedCategory ->
             dexPairs.filter {
                 when (selectedCategory) {
-                    TokenCategory.LATEST_BOOSTED -> {
+                    TokenCategory.LatestBoosted -> {
                         latestBoostedTokenAddresses.contains(it.baseToken?.address)
                     }
 
-                    TokenCategory.MOST_ACTIVE_BOOSTED -> {
+                    TokenCategory.MostActiveBoosted -> {
                         mostActiveBoostedTokenAddresses.contains(it.baseToken?.address)
                     }
 
-                    TokenCategory.LATEST -> {
+                    TokenCategory.Latest -> {
                         latestTokenAddresses.contains(it.baseToken?.address)
                     }
 
@@ -119,17 +119,17 @@ class ScannerRepositoryImpl(
                 val response: List<Token>
 
                 when (tokenCategory) {
-                    TokenCategory.LATEST_BOOSTED -> {
+                    TokenCategory.LatestBoosted -> {
                         response = api.getLatestBoostedTokens().map { it.toToken() }
                         latestBoostedTokenAddresses.addAll(response.map { it.tokenAddress })
                     }
 
-                    TokenCategory.MOST_ACTIVE_BOOSTED -> {
+                    TokenCategory.MostActiveBoosted -> {
                         response = api.getMostActiveBoostedTokens().map { it.toToken() }
                         mostActiveBoostedTokenAddresses.addAll(response.map { it.tokenAddress })
                     }
 
-                    TokenCategory.LATEST -> {
+                    TokenCategory.Latest -> {
                         response = api.getLatestTokens().map { it.toToken() }
                         latestTokenAddresses.addAll(response.map { it.tokenAddress })
                     }
@@ -154,17 +154,17 @@ class ScannerRepositoryImpl(
         withContext(Dispatchers.IO) {
             try {
                 val addresses = when (category) {
-                    TokenCategory.LATEST_BOOSTED -> {
+                    TokenCategory.LatestBoosted -> {
                         _tokens.value.filter { latestBoostedTokenAddresses.contains(it.tokenAddress) }
                             .take(29)
                     }
 
-                    TokenCategory.MOST_ACTIVE_BOOSTED -> {
+                    TokenCategory.MostActiveBoosted -> {
                         _tokens.value.filter { mostActiveBoostedTokenAddresses.contains(it.tokenAddress) }
                             .take(29)
                     }
 
-                    TokenCategory.LATEST -> {
+                    TokenCategory.Latest -> {
                         _tokens.value.filter { latestTokenAddresses.contains(it.tokenAddress) }
                             .take(29)
                     }
