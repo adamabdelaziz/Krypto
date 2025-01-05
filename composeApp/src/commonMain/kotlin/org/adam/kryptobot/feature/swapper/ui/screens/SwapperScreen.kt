@@ -27,6 +27,7 @@ import org.adam.kryptobot.ui.components.BasicText
 import org.adam.kryptobot.ui.components.BasicCard
 import org.adam.kryptobot.ui.components.CenteredRow
 import org.adam.kryptobot.ui.components.InputTextField
+import org.adam.kryptobot.ui.components.ValidatedTextField
 import org.adam.kryptobot.ui.views.PairSwapCard
 import org.adam.kryptobot.ui.theme.CurrentColors
 import org.adam.kryptobot.util.toStringOrEmpty
@@ -66,19 +67,21 @@ class SwapperScreen : Screen {
                  */
                 BasicCard {
                     CenteredRow {
-                        InputTextField(
+                        ValidatedTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             text = state.quoteParams.amount.toStringOrEmpty(),
                             onTextChanged = { onEvent(SwapperScreenEvent.UpdateAmount(it.toDoubleOrNull() ?: 0.0)) },
                             label = "Enter Amount",
                             isError = state.quoteParams.amount == 0.0,
+                            validate = { it.toDoubleOrNull() != null }
                         )
-                        InputTextField(
+                        ValidatedTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             text = state.quoteParams.slippageBps.toStringOrEmpty(),
                             onTextChanged = { onEvent(SwapperScreenEvent.UpdateSlippageBps(it.toIntOrNull() ?: 0)) },
                             label = "Enter Slippage",
                             isError = state.quoteParams.slippageBps == 0,
+                            validate = { it.toIntOrNull() != null }
                         )
                         BasicText(
                             modifier = Modifier.padding(horizontal = 8.dp),
@@ -168,45 +171,37 @@ class SwapperScreen : Screen {
                 BasicCard {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         CenteredRow(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                            InputTextField(
+                            ValidatedTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.platformFeeBps.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdatePlatformFeeBps(it.toIntOrNull())) },
                                 label = "Platform Fee Bps",
-                                isError = state.quoteParams.platformFeeBps.toStringOrEmpty().let { value->
-                                    value.isNotEmpty() && value.toIntOrNull() == null
-                                }
-                            )
-                            InputTextField(
+
+                                )
+                            ValidatedTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.maxAccounts.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAccounts(it.toIntOrNull())) },
                                 label = "Max Accounts",
-                                isError = state.quoteParams.maxAccounts.toStringOrEmpty().let { value->
-                                    value.isNotEmpty() && value.toIntOrNull() == null
-                                }
-                            )
+
+                                )
                         }
 
                         CenteredRow(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                            InputTextField(
+                            ValidatedTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.maxAutoSlippageBps.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAutoSlippageBps(it.toIntOrNull())) },
                                 label = "Max Auto Slippage Bps",
-                                isError = state.quoteParams.maxAutoSlippageBps.toStringOrEmpty().let { value->
-                                    value.isNotEmpty() && value.toIntOrNull() == null
-                                }
-                            )
-                            InputTextField(
+
+                                )
+                            ValidatedTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.autoSlippageCollisionUsdValue.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdateAutoSlippageCollisionUsdValue(it.toIntOrNull())) },
                                 label = "Auto Slippage Collision USD Value",
-                                isError = state.quoteParams.autoSlippageCollisionUsdValue.toStringOrEmpty().let { value ->
-                                    value.isNotEmpty() && value.toIntOrNull() == null
-                                }
-                            )
+
+                                )
                         }
                     }
                 }
