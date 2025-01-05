@@ -7,8 +7,8 @@ sealed class SwapperScreenEvent {
     data class OnDexPairClicked(val dexPair: DexPairSwapUiModel) : SwapperScreenEvent()
     data object OnGetQuoteClicked : SwapperScreenEvent()
 
-    data class UpdateAmount(val amount: Double) : SwapperScreenEvent()
-    data class UpdateSlippageBps(val slippageBps: Int) : SwapperScreenEvent()
+    data class UpdateAmount(val amount: Double?) : SwapperScreenEvent()
+    data class UpdateSlippageBps(val slippageBps: Int?) : SwapperScreenEvent()
     data object UpdateSwapMode : SwapperScreenEvent()
     data class UpdateDexes(val dex: Dex) : SwapperScreenEvent()
     data class UpdateExcludeDexes(val dex: Dex) : SwapperScreenEvent()

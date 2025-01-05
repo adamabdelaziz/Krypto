@@ -1,17 +1,22 @@
 package org.adam.kryptobot.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import compose.icons.FeatherIcons
@@ -54,17 +59,27 @@ fun InputTextField(
     modifier: Modifier = Modifier,
     text: String,
     onTextChanged: (String) -> Unit,
-    label: String = "Enter Text"
-) {
+    label: String = "Enter Text",
+    isError: Boolean = false,
+
+    ) {
+    val textFieldState = remember { mutableStateOf(TextFieldValue(text)) }
+
     OutlinedTextField(
         modifier = modifier,
         colors = AppOutlinedTextFieldColors,
         shape = CurrentShapes.pill,
-        value = text,
-        onValueChange = { onTextChanged(it) },
+        value = textFieldState.value,
+        onValueChange = {
+            textFieldState.value = it
+            onTextChanged(it.text)
+        },
         label = { TextFieldLabel(text = label) },
+        isError = isError,
     )
+
 }
+
 
 @Composable
 fun TextFieldLabel(

@@ -14,6 +14,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.serialization.SerializationException
+import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
 
@@ -24,19 +26,19 @@ interface JupiterSwapApi {
         inputAddress: String,
         outputAddress: String,
         amount: String,
-        slippageBps: Int = 50,
-        swapMode: String = "ExactIn",  // Default to ExactIn
-        dexes: List<String>? = null,
-        excludeDexes: List<String>? = null,
-        restrictIntermediateTokens: Boolean = false,
-        onlyDirectRoutes: Boolean = false,
-        asLegacyTransaction: Boolean = false,
-        platformFeeBps: Int? = null,
-        maxAccounts: Int? = null,
-        autoSlippage: Boolean = false,
-        maxAutoSlippageBps: Int? = null,
-        autoSlippageCollisionUsdValue: Int? = null
-    ): String?
+        slippageBps: Int,
+        swapMode: String,
+        dexes: List<String>,
+        excludeDexes: List<String>,
+        restrictIntermediateTokens: Boolean,
+        onlyDirectRoutes: Boolean,
+        asLegacyTransaction: Boolean,
+        platformFeeBps: Int?,
+        maxAccounts: Int?,
+        autoSlippage: Boolean,
+        maxAutoSlippageBps: Int?,
+        autoSlippageCollisionUsdValue: Int?
+    ): Pair<String?, JupiterQuoteDto?>
 
     suspend fun swapTokens(
         quoteResponse: String,
@@ -58,8 +60,8 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
         amount: String,
         slippageBps: Int,
         swapMode: String,
-        dexes: List<String>?,
-        excludeDexes: List<String>?,
+        dexes: List<String>,
+        excludeDexes: List<String>,
         restrictIntermediateTokens: Boolean,
         onlyDirectRoutes: Boolean,
         asLegacyTransaction: Boolean,
@@ -68,7 +70,7 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
         autoSlippage: Boolean,
         maxAutoSlippageBps: Int?,
         autoSlippageCollisionUsdValue: Int?
-    ): String? {
+    ): Pair<String?, JupiterQuoteDto?> {
 
         val queryParams = Parameters.build {
             append("inputMint", inputAddress)
@@ -77,12 +79,12 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
             append("slippageBps", slippageBps.toString())
             append("swapMode", swapMode)
 
-            dexes?.let {
-                append("dexes", it.joinToString(","))
+            if (dexes.isNotEmpty()) {
+                append("dexes", dexes.joinToString(","))
             }
 
-            excludeDexes?.let {
-                append("excludeDexes", it.joinToString(","))
+            if (excludeDexes.isNotEmpty()) {
+                append("excludeDexes", excludeDexes.joinToString(","))
             }
 
             append("restrictIntermediateTokens", restrictIntermediateTokens.toString())
@@ -115,14 +117,18 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
             }
             val text = response.bodyAsText()
 
-            Logger.d(text)
             Logger.d("Quote response status ${response.status}")
 
-            text
+            val serialized = try {
+                response.body<JupiterQuoteDto>()
+            } catch (e: SerializationException) {
+                null
+            }
+
+            text to serialized
         } catch (e: Exception) {
             Logger.d("API Quote exception ${e.message}")
-            null
-
+            null to null
         }
     }
 
@@ -178,7 +184,7 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
             }
 
             val text = response.bodyAsText()
-            if(text.isNotEmpty()) {
+            if (text.isNotEmpty()) {
                 Logger.d("Successful non empty instruction response")
             }
 

@@ -6,17 +6,17 @@ import org.adam.kryptobot.feature.swapper.enum.SwapMode
 data class QuoteParamsConfig(
 //    val inputAddress: String,
 //    val outputAddress: String,
-    val amount: Double = 0.0,
-    val slippageBps: Int = 10000,
+    val amount: Double = 0.0, // Double
+    val slippageBps: Int = 1000, // Int
     val swapMode: SwapMode = SwapMode.ExactOut,
-    val dexes: Set<Dex> = setOf(), //TODO likely change these two to Dex enum
+    val dexes: Set<Dex> = setOf(),
     val excludeDexes: Set<Dex> = setOf(),
     val restrictIntermediateTokens: Boolean = false,
     val onlyDirectRoutes: Boolean = false,
     val asLegacyTransaction: Boolean = false,
-    val platformFeeBps: Int? = null,
-    val maxAccounts: Int? = null,
+    val platformFeeBps: Int? = null, // Int
+    val maxAccounts: Int? = null, // Int
     val autoSlippage: Boolean = false,
-    val maxAutoSlippageBps: Int? = null,
-    val autoSlippageCollisionUsdValue: Int? = null,
+    val maxAutoSlippageBps: Int? = null, // Int
+    val autoSlippageCollisionUsdValue: Int? = null, // Int
 )

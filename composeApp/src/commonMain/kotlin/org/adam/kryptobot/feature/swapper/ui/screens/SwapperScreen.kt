@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -26,7 +27,7 @@ import org.adam.kryptobot.ui.components.BasicText
 import org.adam.kryptobot.ui.components.BasicCard
 import org.adam.kryptobot.ui.components.CenteredRow
 import org.adam.kryptobot.ui.components.InputTextField
-import org.adam.kryptobot.ui.components.PairSwapCard
+import org.adam.kryptobot.ui.views.PairSwapCard
 import org.adam.kryptobot.ui.theme.CurrentColors
 import org.adam.kryptobot.util.toStringOrEmpty
 
@@ -49,9 +50,14 @@ class SwapperScreen : Screen {
         ) {
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(state.pair) {
-                    PairSwapCard(modifier = Modifier.padding(bottom = 8.dp), pair = it, onClick = {
-                        onEvent(SwapperScreenEvent.OnDexPairClicked(it))
-                    })
+                    PairSwapCard(
+                        modifier = Modifier.padding(bottom = 8.dp),
+                        selected = it == state.selectedPair,
+                        pair = it,
+                        onClick = {
+                            onEvent(SwapperScreenEvent.OnDexPairClicked(it))
+                        }
+                    )
                 }
             }
             Column(modifier = Modifier.weight(2f)) {
@@ -63,14 +69,16 @@ class SwapperScreen : Screen {
                         InputTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             text = state.quoteParams.amount.toStringOrEmpty(),
-                            onTextChanged = { onEvent(SwapperScreenEvent.UpdateAmount(it.toDouble())) },
+                            onTextChanged = { onEvent(SwapperScreenEvent.UpdateAmount(it.toDoubleOrNull() ?: 0.0)) },
                             label = "Enter Amount",
+                            isError = state.quoteParams.amount == 0.0,
                         )
                         InputTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             text = state.quoteParams.slippageBps.toStringOrEmpty(),
-                            onTextChanged = { onEvent(SwapperScreenEvent.UpdateSlippageBps(it.toInt())) },
+                            onTextChanged = { onEvent(SwapperScreenEvent.UpdateSlippageBps(it.toIntOrNull() ?: 0)) },
                             label = "Enter Slippage",
+                            isError = state.quoteParams.slippageBps == 0,
                         )
                         BasicText(
                             modifier = Modifier.padding(horizontal = 8.dp),
@@ -163,14 +171,20 @@ class SwapperScreen : Screen {
                             InputTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.platformFeeBps.toStringOrEmpty(),
-                                onTextChanged = { onEvent(SwapperScreenEvent.UpdatePlatformFeeBps(it.toInt())) },
+                                onTextChanged = { onEvent(SwapperScreenEvent.UpdatePlatformFeeBps(it.toIntOrNull())) },
                                 label = "Platform Fee Bps",
+                                isError = state.quoteParams.platformFeeBps.toStringOrEmpty().let { value->
+                                    value.isNotEmpty() && value.toIntOrNull() == null
+                                }
                             )
                             InputTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.maxAccounts.toStringOrEmpty(),
-                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAccounts(it.toInt())) },
+                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAccounts(it.toIntOrNull())) },
                                 label = "Max Accounts",
+                                isError = state.quoteParams.maxAccounts.toStringOrEmpty().let { value->
+                                    value.isNotEmpty() && value.toIntOrNull() == null
+                                }
                             )
                         }
 
@@ -178,14 +192,20 @@ class SwapperScreen : Screen {
                             InputTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.maxAutoSlippageBps.toStringOrEmpty(),
-                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAutoSlippageBps(it.toInt())) },
+                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAutoSlippageBps(it.toIntOrNull())) },
                                 label = "Max Auto Slippage Bps",
+                                isError = state.quoteParams.maxAutoSlippageBps.toStringOrEmpty().let { value->
+                                    value.isNotEmpty() && value.toIntOrNull() == null
+                                }
                             )
                             InputTextField(
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                                 text = state.quoteParams.autoSlippageCollisionUsdValue.toStringOrEmpty(),
-                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateAutoSlippageCollisionUsdValue(it.toInt())) },
+                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateAutoSlippageCollisionUsdValue(it.toIntOrNull())) },
                                 label = "Auto Slippage Collision USD Value",
+                                isError = state.quoteParams.autoSlippageCollisionUsdValue.toStringOrEmpty().let { value ->
+                                    value.isNotEmpty() && value.toIntOrNull() == null
+                                }
                             )
                         }
                     }

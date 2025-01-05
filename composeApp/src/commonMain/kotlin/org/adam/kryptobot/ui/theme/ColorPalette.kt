@@ -66,4 +66,17 @@ val DarkColorsPumpkin = AppColors(
     warning = HarvestGold,
     success = ForestGreen
 )
+val DarkWinterColors = AppColors(
+    primary = FrostbiteBlue,
+    secondary = IcicleGray,
+    background = MidnightBlue,
+    surface = DeepIce,
+    error = FrozenRed,
+    onPrimary = SnowWhite,
+    onSecondary = SnowWhite,
+    onBackground = SnowWhite,
+    onSurface = SnowWhite,
+    warning = ArcticOrange,
+    success = PineGreen
+)
 val LocalAppColors = staticCompositionLocalOf { DarkColorsPumpkin }

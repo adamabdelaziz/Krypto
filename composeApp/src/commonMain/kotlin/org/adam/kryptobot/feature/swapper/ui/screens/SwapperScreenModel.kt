@@ -1,5 +1,6 @@
 package org.adam.kryptobot.feature.swapper.ui.screens
 
+import androidx.compose.runtime.derivedStateOf
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.zhuinden.flowcombinetuplekt.combineStates
@@ -47,14 +48,21 @@ class SwapperScreenModel(
             }
 
             is SwapperScreenEvent.OnGetQuoteClicked -> {
-
+                _selectedDexPair.value?.let {
+                    getQuote(it)
+                }
             }
+
             is SwapperScreenEvent.UpdateAmount -> {
-                updateQuoteConfig { copy(amount = event.amount) }
+                event.amount?.let {
+                    updateQuoteConfig { copy(amount = event.amount) }
+                }
             }
 
             is SwapperScreenEvent.UpdateSlippageBps -> {
-                updateQuoteConfig { copy(slippageBps = event.slippageBps) }
+                event.slippageBps?.let {
+                    updateQuoteConfig { copy(slippageBps = event.slippageBps) }
+                }
             }
 
             is SwapperScreenEvent.UpdateSwapMode -> {
@@ -123,16 +131,13 @@ class SwapperScreenModel(
         }
     }
 
-    /*
-        TODO: Actual function that takes parameters for getting quote.
-          Store one stateflow exposing wrapper of params
-     */
     private fun getQuote(dexPair: DexPairSwapUiModel) {
+
         screenModelScope.launch {
-            swapperRepository.getQuote(
-                inputAddress = dexPair.quoteToken?.address ?: "",
-                outputAddress = dexPair.baseToken?.address ?: "",
-                amount = 0.001,
+            getQuote(
+                baseTokenAddress = dexPair.baseToken?.address,
+                quoteTokenAddress = dexPair.quoteToken?.address,
+                amount = quoteConfig.value.amount,
             )
         }
     }

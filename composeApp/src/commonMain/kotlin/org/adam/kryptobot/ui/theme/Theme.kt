@@ -9,7 +9,7 @@ import org.adam.kryptobot.App
 
 @Composable
 fun AppTheme(
-    colors: AppColors = DarkColorsPumpkin,
+    colors: AppColors = DarkWinterColors,
     shapes: AppShapes = AppShapes(),
     typography: AppTypography = AppTypography(),
     content: @Composable () -> Unit

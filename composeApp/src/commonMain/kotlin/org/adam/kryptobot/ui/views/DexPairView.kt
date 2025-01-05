@@ -1,4 +1,4 @@
-package org.adam.kryptobot.ui.components
+package org.adam.kryptobot.ui.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -305,19 +305,17 @@ fun PaymentStatusCard(modifier: Modifier = Modifier, paymentStatus: PaymentStatu
 }
 
 @Composable
-fun PairSwapCard(modifier: Modifier = Modifier, pair: DexPairSwapUiModel, onClick: () -> Unit) {
+fun PairSwapCard(modifier: Modifier = Modifier, pair: DexPairSwapUiModel, selected: Boolean, onClick: () -> Unit) {
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clip(CurrentShapes.medium)
-            .clickable {
-                onClick()
-            }
+            .clickable { onClick() }
             .padding(8.dp),
         elevation = 4.dp
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().background(if (selected) CurrentColors.secondary else Color.White),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
