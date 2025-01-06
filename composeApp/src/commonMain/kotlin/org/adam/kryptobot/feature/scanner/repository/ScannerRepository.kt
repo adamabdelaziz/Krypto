@@ -26,7 +26,7 @@ interface ScannerRepository {
     suspend fun getDexPairsByChainAndAddress(chainId: String, tokenAddress: String)
     suspend fun getOrdersPaidFor(chainId: String, tokenAddress: String)
 
-    fun trackPair(dexPairAddress: String?)
+    fun trackPair(baseTokenAddress: String?)
     fun changeCategory(tokenCategory: TokenCategory?)
 
     val trackedTokenAddresses: StateFlow<Set<String>>
@@ -245,8 +245,8 @@ class ScannerRepositoryImpl(
         }
     }
 
-    override fun trackPair(dexPairAddress: String?) {
-        dexPairAddress?.let {
+    override fun trackPair(baseTokenAddress: String?) {
+        baseTokenAddress?.let {
             val trackedSet = _trackedTokenAddresses.value.toMutableList()
             if (trackedSet.contains(it)) {
                 trackedSet.remove(it)

@@ -2,9 +2,6 @@ package org.adam.kryptobot.feature.swapper.data.dto
 
 import kotlinx.serialization.Serializable
 
-/*
-    TODO For whatever reason not serializing so just using the raw string that comes for the quote since that is needed for the swap
- */
 @Serializable
 data class JupiterQuoteDto(
     val inputMint: String,

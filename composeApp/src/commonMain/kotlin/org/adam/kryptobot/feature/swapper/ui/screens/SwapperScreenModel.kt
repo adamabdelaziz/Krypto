@@ -136,7 +136,9 @@ class SwapperScreenModel(
         screenModelScope.launch {
             getQuote(
                 baseTokenAddress = dexPair.baseToken?.address,
+                baseTokenSymbol = dexPair.baseToken?.symbol,
                 quoteTokenAddress = dexPair.quoteToken?.address,
+                quoteTokenSymbol = dexPair.quoteToken?.symbol,
                 amount = quoteConfig.value.amount,
             )
         }

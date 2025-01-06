@@ -13,8 +13,9 @@ import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.swapper.data.JupiterSwapApi
 import org.adam.kryptobot.feature.swapper.data.SolanaApi
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
+import org.adam.kryptobot.feature.swapper.data.mappers.getSwapTokenAddresses
 import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
-import org.adam.kryptobot.feature.swapper.data.model.TransactionStep
+import org.adam.kryptobot.feature.swapper.data.model.Transaction
 import org.adam.kryptobot.feature.swapper.enum.Status
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
@@ -34,7 +35,9 @@ interface SwapperRepository {
      */
     suspend fun getQuote(
         baseTokenAddress: String?,
+        baseTokenSymbol: String?,
         quoteTokenAddress: String?,
+        quoteTokenSymbol: String?,
         amount: Double,
     )
 
@@ -45,7 +48,7 @@ interface SwapperRepository {
 
     //TODO change for support for multiple DEX pairs at once(key field in data object instead of maps)
     val quoteConfig: StateFlow<QuoteParamsConfig>
-    val currentSwaps: StateFlow<Map<String, List<TransactionStep>>>  //Token address key and list of associated swaps done on it
+    val currentSwaps: StateFlow<Map<String, List<Transaction>>>  //Token address key and list of associated swaps done on it
 }
 
 class SwapperRepositoryImpl(
@@ -55,11 +58,11 @@ class SwapperRepositoryImpl(
     private val solanaApi: SolanaApi,
 ) : SwapperRepository {
 
-    private val _currentSwaps: MutableStateFlow<Map<String, List<TransactionStep>>> =
+    private val _currentSwaps: MutableStateFlow<Map<String, List<Transaction>>> =
         MutableStateFlow(
             mapOf()
         )
-    override val currentSwaps: StateFlow<Map<String, List<TransactionStep>>> =
+    override val currentSwaps: StateFlow<Map<String, List<Transaction>>> =
         _currentSwaps.stateIn(
             scope = stateFlowScope,
             initialValue = _currentSwaps.value,
@@ -100,20 +103,24 @@ class SwapperRepositoryImpl(
 
     override suspend fun getQuote(
         baseTokenAddress: String?,
+        baseTokenSymbol: String?,
         quoteTokenAddress: String?,
+        quoteTokenSymbol: String?,
         amount: Double,
     ) {
         if (baseTokenAddress == null || quoteTokenAddress == null) return
 
-        val (inputAddress, outputAddress) = when (quoteConfig.value.swapMode) {
-            SwapMode.ExactIn -> {
-                (quoteTokenAddress to baseTokenAddress)
-            }
+        val (inputAddress, outputAddress) = getSwapTokenAddresses(
+            swapMode = _quoteConfig.value.swapMode,
+            baseTokenAddress = baseTokenAddress,
+            quoteTokenAddress = quoteTokenAddress
+        )
+        val (inputSymbol, outputSymbol) = getSwapTokenAddresses(
+            swapMode = _quoteConfig.value.swapMode,
+            baseTokenAddress = baseTokenSymbol ?: "",
+            quoteTokenAddress = quoteTokenSymbol ?: ""
+        )
 
-            SwapMode.ExactOut -> {
-                (baseTokenAddress to quoteTokenAddress)
-            }
-        }
         withContext(Dispatchers.IO) {
             try {
                 val decimals = solanaApi.getMintDecimalsAmount(baseTokenAddress)
@@ -122,26 +129,31 @@ class SwapperRepositoryImpl(
                     inputAddress = inputAddress,
                     outputAddress = outputAddress,
                     amount = formatTokenAmountForQuote(amount, decimals),
-                    slippageBps = quoteConfig.value.slippageBps,
-                    swapMode = quoteConfig.value.swapMode.name,
-                    dexes = quoteConfig.value.dexes.map { it.name },
-                    excludeDexes = quoteConfig.value.excludeDexes.map { it.name },
-                    restrictIntermediateTokens = quoteConfig.value.restrictIntermediateTokens,
-                    onlyDirectRoutes = quoteConfig.value.onlyDirectRoutes,
-                    asLegacyTransaction = quoteConfig.value.asLegacyTransaction,
-                    platformFeeBps = quoteConfig.value.platformFeeBps,
-                    maxAccounts = quoteConfig.value.maxAccounts,
-                    autoSlippage = quoteConfig.value.autoSlippage,
-                    maxAutoSlippageBps = quoteConfig.value.maxAutoSlippageBps,
-                    autoSlippageCollisionUsdValue = quoteConfig.value.autoSlippageCollisionUsdValue
+                    slippageBps = _quoteConfig.value.slippageBps,
+                    swapMode = _quoteConfig.value.swapMode.name,
+                    dexes = _quoteConfig.value.dexes.map { it.name },
+                    excludeDexes = _quoteConfig.value.excludeDexes.map { it.name },
+                    restrictIntermediateTokens = _quoteConfig.value.restrictIntermediateTokens,
+                    onlyDirectRoutes = _quoteConfig.value.onlyDirectRoutes,
+                    asLegacyTransaction = _quoteConfig.value.asLegacyTransaction,
+                    platformFeeBps = _quoteConfig.value.platformFeeBps,
+                    maxAccounts = _quoteConfig.value.maxAccounts,
+                    autoSlippage = _quoteConfig.value.autoSlippage,
+                    maxAutoSlippageBps = _quoteConfig.value.maxAutoSlippageBps,
+                    autoSlippageCollisionUsdValue = _quoteConfig.value.autoSlippageCollisionUsdValue
                 )
 
                 quoteRaw?.let {
-                    createTransactionStep(
+                    createTransaction(
                         quote = it,
-                        inputAddress = baseTokenAddress,
+                        baseTokenAddress = baseTokenAddress,
                         amount = amount,
-                        quoteDto = quoteDto
+                        quoteDto = quoteDto,
+                        inputSymbol = inputSymbol,
+                        outputSymbol = outputSymbol,
+                        inputAddress = inputAddress,
+                        outputAddress = outputAddress,
+                        swapMode = _quoteConfig.value.swapMode
                     )
                 }
                 //  _currentQuote.value = it
@@ -156,30 +168,49 @@ class SwapperRepositoryImpl(
     private fun formatTokenAmountForQuote(amount: Double, decimals: Int): String =
         ((amount * 10.0.pow(decimals)).toLong()).toString()
 
-    private fun createTransactionStep(quote: String, inputAddress: String, amount: Double, quoteDto: JupiterQuoteDto?) {
+    private fun createTransaction(
+        quote: String,
+        baseTokenAddress: String,
+        amount: Double,
+        quoteDto: JupiterQuoteDto?,
+        inputSymbol: String,
+        outputSymbol: String,
+        inputAddress: String,
+        outputAddress: String,
+        swapMode: SwapMode
+    ) {
         val currentMap = _currentSwaps.value.toMutableMap()
-        val swapList = currentMap.getOrDefault(inputAddress, emptyList()).toMutableList()
+        val swapList = currentMap.getOrDefault(baseTokenAddress, emptyList()).toMutableList()
 
-        val transactionStep = TransactionStep(quoteRaw = quote, amount = amount, quoteDto = quoteDto)
+        val transactionStep = Transaction(
+            quoteRaw = quote,
+            amount = amount,
+            quoteDto = quoteDto,
+            inputSymbol = inputSymbol,
+            outputSymbol = outputSymbol,
+            inputAddress = inputAddress,
+            outputAddress = outputAddress,
+            swapMode = swapMode
+        )
         swapList.add(transactionStep)
 
-        currentMap[inputAddress] = swapList.toList()
+        currentMap[baseTokenAddress] = swapList.toList()
         _currentSwaps.value = currentMap.toMap()
     }
 
-    private fun updateTransactionStep(tokenAddress: String, updatedStep: TransactionStep) {
+    private fun updateTransaction(tokenAddress: String, updatedTransaction: Transaction) {
         val currentMap = _currentSwaps.value.toMutableMap()
         val swapList = currentMap[tokenAddress]?.toMutableList() ?: return
 
-        val index = swapList.indexOfFirst { it.quoteRaw == updatedStep.quoteRaw }
+        val index = swapList.indexOfFirst { it.quoteRaw == updatedTransaction.quoteRaw }
         if (index != -1) {
-            swapList[index] = updatedStep
+            swapList[index] = updatedTransaction
             currentMap[tokenAddress] = swapList.toList()
             _currentSwaps.value = currentMap.toMap()
         }
     }
 
-    private fun getTransactionStep(quote: String, tokenAddress: String): TransactionStep? {
+    private fun getTransaction(quote: String, tokenAddress: String): Transaction? {
         return _currentSwaps.value[tokenAddress]?.firstOrNull { it.quoteRaw == quote }
     }
 
@@ -188,7 +219,7 @@ class SwapperRepositoryImpl(
         Will need to pass around quote and token address to ensure its referring to the correct quote in the List<TransactionStep>
      */
     override suspend fun attemptSwap(quote: String, tokenAddress: String) {
-        val transactionStep = getTransactionStep(quote, tokenAddress)
+        val transactionStep = getTransaction(quote, tokenAddress)
         withContext(Dispatchers.IO) {
             try {
                 transactionStep?.let { step ->
@@ -198,7 +229,7 @@ class SwapperRepositoryImpl(
                     )
                     instructions?.let {
                         val updatedStep = step.copy(swapResponse = it)
-                        updateTransactionStep(tokenAddress, updatedStep)
+                        updateTransaction(tokenAddress, updatedStep)
                         Logger.d("Instructions are $it")
                         //val encoding = detectEncoding(it.swapTransaction)
                         //Logger.d("Encoding is $encoding")
@@ -242,7 +273,7 @@ class SwapperRepositoryImpl(
         Similarly will need the specific quote and token address
      */
     override suspend fun performSwapTransaction(quote: String, tokenAddress: String) {
-        val transactionStep = getTransactionStep(quote, tokenAddress)
+        val transactionStep = getTransaction(quote, tokenAddress)
         transactionStep?.swapResponse?.let {
             withContext(Dispatchers.IO) {
                 try {
@@ -255,7 +286,7 @@ class SwapperRepositoryImpl(
                         transactionSignature = result.getOrNull(),
                         status = if (result.isSuccess) Status.SUCCESS else Status.FAIL
                     )
-                    updateTransactionStep(tokenAddress, updatedStep)
+                    updateTransaction(tokenAddress, updatedStep)
                 } catch (e: Exception) {
                     Logger.d("Exception performing swap transaction ${e.message}")
                     e.printStackTrace()

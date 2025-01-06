@@ -7,6 +7,9 @@ import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
 import org.adam.kryptobot.feature.scanner.data.dto.Transactions
 import org.adam.kryptobot.feature.scanner.data.dto.Volume
 
+/*
+    TODO map all API objects to values that are actually being used
+ */
 data class DexPairSwapUiModel(
     val dexId: String? = null,
     val baseToken: TokenDto? = null,
