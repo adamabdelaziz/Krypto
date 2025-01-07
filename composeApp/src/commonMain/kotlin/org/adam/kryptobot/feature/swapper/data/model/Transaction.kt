@@ -12,6 +12,8 @@ data class Transaction(
     val inputAddress: String,
     val outputAddress: String,
     val outputSymbol: String,
+    val inputAmount: String,
+    val outputAmount: String,
     val swapMode: SwapMode,
     val quoteDto: JupiterQuoteDto? = null,
     val swapResponse: JupiterSwapResponseDto?= null,

@@ -37,7 +37,7 @@ fun BasicCard(
 fun CenteredRow(
     modifier: Modifier = Modifier,
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
-    horizontalArrangement: Arrangement. Horizontal = Arrangement. Start,
+    horizontalArrangement: Arrangement. Horizontal = Arrangement.Start,
     content: @Composable RowScope.() -> Unit
 ) {
     Row(

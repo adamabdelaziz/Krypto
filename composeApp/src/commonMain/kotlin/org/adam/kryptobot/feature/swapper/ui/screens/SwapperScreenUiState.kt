@@ -24,10 +24,6 @@ fun mapSwapScreenUiState(
     quoteConfig: QuoteParamsConfig,
     transactionSteps: Map<String, List<Transaction>>,
 ): SwapperScreenUiState {
-    /*
-        @TODO Map transaction step for more readable UI
-     */
-
 
     return SwapperScreenUiState(
         pair = pair.filter { trackedTokenAddresses.contains(it.baseToken?.address) }

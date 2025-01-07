@@ -13,3 +13,13 @@ fun BigDecimal.formatToDollarString(): String {
     return formatter.format(this)
 }
 
+/*
+    For 0.000001 instead of scientific notation
+ */
+fun Double.formatToDecimalString(): String {
+    return BigDecimal(this.toString()).stripTrailingZeros().toPlainString()
+}
+
+fun BigDecimal.formatToDecimalString(): String {
+    return this.stripTrailingZeros().toPlainString()
+}

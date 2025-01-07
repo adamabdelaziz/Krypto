@@ -13,13 +13,15 @@ import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.swapper.data.JupiterSwapApi
 import org.adam.kryptobot.feature.swapper.data.SolanaApi
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
-import org.adam.kryptobot.feature.swapper.data.mappers.getSwapTokenAddresses
 import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
 import org.adam.kryptobot.feature.swapper.data.model.Transaction
 import org.adam.kryptobot.feature.swapper.enum.Status
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
+import org.adam.kryptobot.util.formatToDecimalString
+import org.adam.kryptobot.util.getSwapTokenAddresses
+import org.adam.kryptobot.util.lamportsToSol
 import kotlin.math.pow
 
 interface SwapperRepository {
@@ -123,7 +125,7 @@ class SwapperRepositoryImpl(
 
         withContext(Dispatchers.IO) {
             try {
-                val decimals = solanaApi.getMintDecimalsAmount(baseTokenAddress)
+                val decimals = solanaApi.getMintDecimalsAmount(inputAddress)
                 Logger.d("Decimals for quote is $decimals")
                 val (quoteRaw, quoteDto) = swapApi.getQuote(
                     inputAddress = inputAddress,
@@ -142,6 +144,9 @@ class SwapperRepositoryImpl(
                     maxAutoSlippageBps = _quoteConfig.value.maxAutoSlippageBps,
                     autoSlippageCollisionUsdValue = _quoteConfig.value.autoSlippageCollisionUsdValue
                 )
+                quoteDto?.routePlan?.forEach {
+                    Logger.d("${it.swapInfo.feeMint} : ${it.swapInfo.feeAmount} : ${it.swapInfo.ammKey} : ${it.swapInfo.label}}")
+                }
 
                 quoteRaw?.let {
                     createTransaction(
@@ -153,12 +158,11 @@ class SwapperRepositoryImpl(
                         outputSymbol = outputSymbol,
                         inputAddress = inputAddress,
                         outputAddress = outputAddress,
+                        inputAmount = quoteDto?.inAmount ?: "",
+                        outputAmount = quoteDto?.outAmount ?: "",
                         swapMode = _quoteConfig.value.swapMode
                     )
                 }
-                //  _currentQuote.value = it
-
-
             } catch (e: Exception) {
                 Logger.d("Exception getting Quote ${e.message}")
             }
@@ -177,12 +181,14 @@ class SwapperRepositoryImpl(
         outputSymbol: String,
         inputAddress: String,
         outputAddress: String,
+        inputAmount: String,
+        outputAmount: String,
         swapMode: SwapMode
     ) {
         val currentMap = _currentSwaps.value.toMutableMap()
         val swapList = currentMap.getOrDefault(baseTokenAddress, emptyList()).toMutableList()
 
-        val transactionStep = Transaction(
+        val transaction = Transaction(
             quoteRaw = quote,
             amount = amount,
             quoteDto = quoteDto,
@@ -190,9 +196,11 @@ class SwapperRepositoryImpl(
             outputSymbol = outputSymbol,
             inputAddress = inputAddress,
             outputAddress = outputAddress,
-            swapMode = swapMode
+            swapMode = swapMode,
+            inputAmount = inputAmount,
+            outputAmount = outputAmount,
         )
-        swapList.add(transactionStep)
+        swapList.add(transaction)
 
         currentMap[baseTokenAddress] = swapList.toList()
         _currentSwaps.value = currentMap.toMap()

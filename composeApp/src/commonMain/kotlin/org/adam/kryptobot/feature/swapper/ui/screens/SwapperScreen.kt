@@ -30,6 +30,7 @@ import org.adam.kryptobot.ui.components.InputTextField
 import org.adam.kryptobot.ui.components.ValidatedTextField
 import org.adam.kryptobot.ui.views.PairSwapCard
 import org.adam.kryptobot.ui.theme.CurrentColors
+import org.adam.kryptobot.ui.views.TransactionView
 import org.adam.kryptobot.util.toStringOrEmpty
 
 class SwapperScreen : Screen {
@@ -218,6 +219,9 @@ class SwapperScreen : Screen {
                     /*
                     TransactionStep UI here
                      */
+                    items(state.selectedTransactionSteps) { item ->
+                        TransactionView(modifier = Modifier.padding(vertical = 2.dp), transaction = item, onClick = {})
+                    }
                 }
 
             }

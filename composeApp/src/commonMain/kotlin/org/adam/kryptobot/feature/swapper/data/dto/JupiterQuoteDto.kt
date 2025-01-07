@@ -1,6 +1,7 @@
 package org.adam.kryptobot.feature.swapper.data.dto
 
 import kotlinx.serialization.Serializable
+import java.math.BigDecimal
 
 @Serializable
 data class JupiterQuoteDto(
@@ -42,3 +43,12 @@ data class SwapInfoDto(
     val feeAmount: String,
     val feeMint: String
 )
+
+fun JupiterQuoteDto.getTotalFees(): BigDecimal {
+    val routeFees = this.routePlan
+        .map { it.swapInfo.feeAmount.toBigDecimal() }
+        .fold(BigDecimal.ZERO) { acc, fee -> acc + fee }
+    val platformFee = this.platformFee?.amount?.toBigDecimal() ?: BigDecimal.ZERO
+
+    return routeFees + platformFee
+}
