@@ -19,9 +19,11 @@ import org.adam.kryptobot.feature.swapper.enum.Status
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
+import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 import org.adam.kryptobot.util.formatToDecimalString
 import org.adam.kryptobot.util.getSwapTokenAddresses
 import org.adam.kryptobot.util.lamportsToSol
+import java.math.BigDecimal
 import kotlin.math.pow
 
 interface SwapperRepository {
@@ -126,6 +128,7 @@ class SwapperRepositoryImpl(
         withContext(Dispatchers.IO) {
             try {
                 val decimals = solanaApi.getMintDecimalsAmount(inputAddress)
+                val outDecimals = solanaApi.getMintDecimalsAmount(outputAddress)
                 Logger.d("Decimals for quote is $decimals")
                 val (quoteRaw, quoteDto) = swapApi.getQuote(
                     inputAddress = inputAddress,
@@ -147,7 +150,16 @@ class SwapperRepositoryImpl(
                 quoteDto?.routePlan?.forEach {
                     Logger.d("${it.swapInfo.feeMint} : ${it.swapInfo.feeAmount} : ${it.swapInfo.ammKey} : ${it.swapInfo.label}}")
                 }
-
+                Logger.d("Raw amounts In: ${quoteDto?.inAmount} Out: ${quoteDto?.outAmount}")
+                val readableIn = adjustTokenAmount(quoteDto?.inAmount ?: "", decimals)
+                val readableOut = adjustTokenAmount(quoteDto?.outAmount ?: "", outDecimals)
+                Logger.d("Human readable attempt in: $readableIn")
+                Logger.d("Human readable attempt out: $readableOut")
+                Logger.d("In mint ${quoteDto?.inputMint} is Solana ${quoteDto?.inputMint == SOLANA_MINT_ADDRESS}")
+                Logger.d("Out mint ${quoteDto?.outputMint} is Solana ${quoteDto?.outputMint == SOLANA_MINT_ADDRESS}")
+                /*
+                    TODO: Confirm if fees are similar and adjust UI and mapping accordingly so it makes sense
+                 */
                 quoteRaw?.let {
                     createTransaction(
                         quote = it,
@@ -171,6 +183,10 @@ class SwapperRepositoryImpl(
 
     private fun formatTokenAmountForQuote(amount: Double, decimals: Int): String =
         ((amount * 10.0.pow(decimals)).toLong()).toString()
+
+    private fun adjustTokenAmount(amount: String, decimals: Int): BigDecimal {
+        return BigDecimal(amount).movePointLeft(decimals)
+    }
 
     private fun createTransaction(
         quote: String,

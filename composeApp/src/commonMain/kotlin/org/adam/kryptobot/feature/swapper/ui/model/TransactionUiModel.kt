@@ -6,12 +6,12 @@ import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 data class TransactionUiModel (
     val amount: String,
     val swapMode: SwapMode,
-    val inputSymbol: String,
-    val outputSymbol: String,
-    val inputAmount: String,
-    val outputAmount: String,
+    val inSymbol: String,
+    val outSymbol: String,
+    val inAmount: String,
+    val outAmount: String,
     val transactionStep: TransactionStep,
-    val platformFeeAmount: String,
-    val platformFeeBps: Double,
+    val feesLamport:String,
+    val feesSol:String,
     val slippageBps: Int,
 )
