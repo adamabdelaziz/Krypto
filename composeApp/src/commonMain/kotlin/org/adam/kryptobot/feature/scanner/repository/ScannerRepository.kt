@@ -155,28 +155,23 @@ class ScannerRepositoryImpl(
             try {
                 val addresses = when (category) {
                     TokenCategory.LatestBoosted -> {
-                        _tokens.value.filter { latestBoostedTokenAddresses.contains(it.tokenAddress) }
-                            .take(29).map { it.tokenAddress }
+                        latestBoostedTokenAddresses.take(29)
                     }
 
                     TokenCategory.MostActiveBoosted -> {
-                        _tokens.value.filter { mostActiveBoostedTokenAddresses.contains(it.tokenAddress) }
-                            .take(29).map { it.tokenAddress }
+                        mostActiveBoostedTokenAddresses.take(29)
                     }
 
                     TokenCategory.Latest -> {
-                        _tokens.value.filter { latestTokenAddresses.contains(it.tokenAddress) }
-                            .take(29).map { it.tokenAddress }
+                        latestTokenAddresses.take(29)
                     }
 
                     else -> {
-                        Logger.d("Taking from tracked list")
-                         _trackedTokenAddresses.value.take(29)
+                        _trackedTokenAddresses.value.take(29)
                     }
                 }.distinct().joinToString(",")
 
                 if (addresses.isNotEmpty()) {
-                    Logger.d("Non empty tracked list")
                     val response = api.getPairsByTokenAddress(addresses)
 
                     response?.let {
@@ -248,15 +243,13 @@ class ScannerRepositoryImpl(
 
     override fun trackPair(baseTokenAddress: String?, toggle: Boolean) {
         baseTokenAddress?.let {
-            val trackedSet = _trackedTokenAddresses.value.toMutableList()
-            if (trackedSet.contains(it)) {
-                if (toggle) {
-                    trackedSet.remove(it)
-                }
+            val trackedSet = _trackedTokenAddresses.value.toMutableSet()
+            if (toggle) {
+                trackedSet.remove(it)
             } else {
                 trackedSet.add(it)
             }
-            _trackedTokenAddresses.value = trackedSet.toSet()
+            _trackedTokenAddresses.value = trackedSet
         }
     }
 
