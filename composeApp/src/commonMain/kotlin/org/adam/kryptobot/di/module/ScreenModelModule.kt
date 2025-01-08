@@ -2,12 +2,12 @@ package org.adam.kryptobot.di.module
 
 import org.adam.kryptobot.feature.scanner.ui.screens.ScannerScreenModel
 import org.adam.kryptobot.feature.swapper.ui.screens.SwapperScreenModel
-import org.adam.kryptobot.feature.wallet.screens.WalletScreenModel
+import org.adam.kryptobot.feature.wallet.ui.screens.WalletScreenModel
 import org.koin.dsl.module
 
 val screenModelsModule = module {
     factory {
-        ScannerScreenModel(scannerRepository = get(), monitorTokenAddresses = get(), trackCoinsInWalletUseCase = get())
+        ScannerScreenModel(scannerRepository = get(), monitorTokenAddresses = get(), trackCoinsInWalletUseCase = get(), trackPairUseCase = get())
     }
     factory {
         SwapperScreenModel(
@@ -20,6 +20,7 @@ val screenModelsModule = module {
     factory {
         WalletScreenModel(
             walletRepository = get(),
+            trackCoinsInWalletUseCase = get(),
         )
     }
 }

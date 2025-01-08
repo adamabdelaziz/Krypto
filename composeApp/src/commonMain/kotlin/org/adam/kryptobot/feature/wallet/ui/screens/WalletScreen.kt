@@ -21,6 +21,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import org.adam.kryptobot.feature.wallet.ui.screens.WalletScreenModel
 import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.InputTextField
 import org.adam.kryptobot.ui.components.PasswordTextField

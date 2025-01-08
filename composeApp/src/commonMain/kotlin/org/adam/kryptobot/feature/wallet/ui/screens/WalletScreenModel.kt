@@ -1,4 +1,4 @@
-package org.adam.kryptobot.feature.wallet.screens
+package org.adam.kryptobot.feature.wallet.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -9,11 +9,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.wallet.repository.WalletRepository
+import org.adam.kryptobot.feature.wallet.screens.WalletScreenEvent
+import org.adam.kryptobot.feature.wallet.screens.WalletScreenUiState
+import org.adam.kryptobot.feature.wallet.usecase.TrackCoinsInWalletUseCase
 
 class WalletScreenModel(
-    private val walletRepository: WalletRepository
+    private val walletRepository: WalletRepository,
+    private val trackCoinsInWalletUseCase: TrackCoinsInWalletUseCase,
 ) : ScreenModel {
-    
+
     private val _privateKeyVisibility = MutableStateFlow(false)
 
     val uiState: StateFlow<WalletScreenUiState> = combine(
@@ -34,7 +38,7 @@ class WalletScreenModel(
         when (event) {
             WalletScreenEvent.OnRefreshBalanceClicked -> {
                 screenModelScope.launch {
-                    walletRepository.refreshBalance()
+                    trackCoinsInWalletUseCase()
                 }
             }
 
@@ -45,6 +49,7 @@ class WalletScreenModel(
             is WalletScreenEvent.OnUpdatePublicKeyClicked -> {
                 walletRepository.updateWallet { it.copy(publicKey = event.publicKey) }
             }
+
             WalletScreenEvent.OnToggleVisibilityClicked -> {
                 _privateKeyVisibility.value = !_privateKeyVisibility.value
             }

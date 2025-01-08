@@ -11,24 +11,14 @@ import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase.C
 import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
 import org.adam.kryptobot.util.cancelAndNull
 
-interface MonitorTokenAddressesUseCase {
-    operator fun invoke(tokenCategory: TokenCategory?, delay: Long = SCAN_DELAY)
-    fun stop()
-
-    companion object {
-        const val SCAN_DELAY = 5000L
-        const val SWAP_SCAN_DELAY = 3000L
-    }
-}
-
-class MonitorTokenAddressesUseCaseImpl(
+class MonitorTokenAddressesUseCase(
     private val scannerRepository: ScannerRepository,
     private val coroutineScope: CoroutineScope,
     private val snackbarManager: SnackbarManager,
-): MonitorTokenAddressesUseCase {
+) {
     private var monitorJob: Job? = null
 
-    override operator fun invoke(tokenCategory: TokenCategory?, delay: Long) {
+     operator fun invoke(tokenCategory: TokenCategory?, delay: Long = SCAN_DELAY) {
         stop()
         scannerRepository.changeCategory(tokenCategory)
 
@@ -46,7 +36,12 @@ class MonitorTokenAddressesUseCaseImpl(
         }
     }
 
-    override fun stop() {
+     fun stop() {
         monitorJob?.cancelAndNull()
+    }
+
+    companion object {
+        const val SCAN_DELAY = 5000L
+        const val SWAP_SCAN_DELAY = 3000L
     }
 }

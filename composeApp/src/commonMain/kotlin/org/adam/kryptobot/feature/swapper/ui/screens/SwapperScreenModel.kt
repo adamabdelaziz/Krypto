@@ -12,7 +12,6 @@ import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
-import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCaseImpl
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.feature.swapper.repository.SwapperRepository
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
@@ -24,8 +23,7 @@ class SwapperScreenModel(
     private val scannerRepository: ScannerRepository,
     private val walletRepository: WalletRepository,
     private val monitorTokenAddressesUseCase: MonitorTokenAddressesUseCase,
-) : ScreenModel, ScannerRepository by scannerRepository, SwapperRepository by swapperRepository,
-    MonitorTokenAddressesUseCase by monitorTokenAddressesUseCase {
+) : ScreenModel, ScannerRepository by scannerRepository, SwapperRepository by swapperRepository {
 
     private val _selectedDexPair = MutableStateFlow<DexPairSwapUiModel?>(null)
 
@@ -144,7 +142,7 @@ class SwapperScreenModel(
                 quoteTokenAddress = dexPair.quoteToken?.address,
                 quoteTokenSymbol = dexPair.quoteToken?.symbol,
                 amount = quoteConfig.value.amount,
-                initialPrice =  BigDecimal(dexPair.priceSol),
+                initialPrice = BigDecimal(dexPair.priceSol),
                 key = dexPair.key
             )
         }

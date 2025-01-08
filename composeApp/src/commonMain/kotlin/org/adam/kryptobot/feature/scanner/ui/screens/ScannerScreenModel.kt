@@ -11,13 +11,15 @@ import org.adam.kryptobot.feature.scanner.enum.Chain
 import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
+import org.adam.kryptobot.feature.scanner.usecase.TrackPairUseCase
 import org.adam.kryptobot.feature.wallet.usecase.TrackCoinsInWalletUseCase
-import org.adam.kryptobot.feature.wallet.usecase.TrackCoinsInWalletUseCaseImpl
+
 
 class ScannerScreenModel(
     private val scannerRepository: ScannerRepository,
     private val monitorTokenAddresses: MonitorTokenAddressesUseCase,
     private val trackCoinsInWalletUseCase: TrackCoinsInWalletUseCase,
+    private val trackPairUseCase: TrackPairUseCase,
 ) : ScreenModel, ScannerRepository by scannerRepository {
 
     private val _dexFilter: MutableStateFlow<Set<Dex>> = MutableStateFlow(setOf())
@@ -40,7 +42,7 @@ class ScannerScreenModel(
     fun onEvent(event: ScannerScreenEvent) {
         when (event) {
             is ScannerScreenEvent.OnTokenAddressSelected -> {
-                trackPair(event.pair.baseToken?.address)
+                trackPairUseCase(event.pair.baseToken?.address)
             }
 
             is ScannerScreenEvent.OnTokenCategorySelected -> {

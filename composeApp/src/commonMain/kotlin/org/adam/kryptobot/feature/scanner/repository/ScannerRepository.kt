@@ -172,6 +172,7 @@ class ScannerRepositoryImpl(
                 }.distinct().joinToString(",")
 
                 if (addresses.isNotEmpty()) {
+                    Logger.d("Tracked size is ${_trackedTokenAddresses.value.size}")
                     val response = api.getPairsByTokenAddress(addresses)
 
                     response?.let {
