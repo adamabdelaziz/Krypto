@@ -6,14 +6,18 @@ import com.zhuinden.flowcombinetuplekt.combineStates
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.enum.Chain
 import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
+import org.adam.kryptobot.feature.wallet.usecase.TrackCoinsInWalletUseCase
+import org.adam.kryptobot.feature.wallet.usecase.TrackCoinsInWalletUseCaseImpl
 
 class ScannerScreenModel(
     private val scannerRepository: ScannerRepository,
     private val monitorTokenAddresses: MonitorTokenAddressesUseCase,
+    private val trackCoinsInWalletUseCase: TrackCoinsInWalletUseCase,
 ) : ScreenModel, ScannerRepository by scannerRepository {
 
     private val _dexFilter: MutableStateFlow<Set<Dex>> = MutableStateFlow(setOf())
@@ -42,6 +46,11 @@ class ScannerScreenModel(
             is ScannerScreenEvent.OnTokenCategorySelected -> {
                 monitorTokenAddresses(event.category)
                 _scanRunning.value = true
+                if (event.category == null) {
+                    screenModelScope.launch {
+                        trackCoinsInWalletUseCase()
+                    }
+                }
             }
 
             ScannerScreenEvent.OnStopSelected -> {

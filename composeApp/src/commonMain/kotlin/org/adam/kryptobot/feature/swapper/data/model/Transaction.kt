@@ -14,7 +14,7 @@ data class Transaction(
     val inToken: TransactionToken,
     val outToken: TransactionToken,
     val swapMode: SwapMode,
-    val fee: String? = null,
+    val fee: BigDecimal = BigDecimal.ZERO,
     val quoteDto: JupiterQuoteDto? = null,
     val swapResponse: JupiterSwapResponseDto?= null,
     val transactionSignature: String? = null,

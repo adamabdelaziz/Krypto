@@ -1,12 +1,10 @@
 package org.adam.kryptobot.feature.swapper.data.mappers
 
-import org.adam.kryptobot.feature.swapper.data.dto.getTotalFees
 import org.adam.kryptobot.feature.swapper.data.model.Transaction
 import org.adam.kryptobot.feature.swapper.data.model.toUi
 import org.adam.kryptobot.feature.swapper.ui.model.TransactionUiModel
 import org.adam.kryptobot.util.calculatePercentChange
 import org.adam.kryptobot.util.formatToDecimalString
-import org.adam.kryptobot.util.lamportsToSol
 import java.math.BigDecimal
 
 fun Transaction.toTransactionUiModel(livePrice: BigDecimal): TransactionUiModel {
@@ -19,7 +17,7 @@ fun Transaction.toTransactionUiModel(livePrice: BigDecimal): TransactionUiModel 
         outToken = this.outToken.toUi(),
         transactionStep = this.transactionStep,
         slippageBps = this.quoteDto?.slippageBps ?: 0,
-        fees = this.fee,
+        fees = this.fee.formatToDecimalString(),
         initialPriceSol = this.initialPriceSol.formatToDecimalString(),
         percentChange = percentChange.toString(),
     )

@@ -3,6 +3,7 @@ package org.adam.kryptobot.feature.scanner.usecase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
@@ -38,9 +39,9 @@ class MonitorTokenAddressesUseCaseImpl(
         }
 
         monitorJob = coroutineScope.launch {
-            while (true) {
+            while (isActive) {
                 scannerRepository.getDexPairsByAddressList(tokenCategory)
-                delay(SCAN_DELAY)
+                delay(delay)
             }
         }
     }

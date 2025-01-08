@@ -230,8 +230,8 @@ class SwapperRepositoryImpl(
 
         val fee = quoteDto?.let {
             Logger.d("Platform fee null: ${it.platformFee == null}")
-            getTotalFees(it,  inputToken.decimals).formatToDecimalString()
-        }
+            getTotalFees(it,  inputToken.decimals)
+        } ?: BigDecimal.ZERO
 
         Logger.d("Readable fee is $fee")
 
