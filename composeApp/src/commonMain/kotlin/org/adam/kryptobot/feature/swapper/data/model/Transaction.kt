@@ -21,11 +21,22 @@ data class Transaction(
     val status: Status = Status.PENDING,
     val transactionStep: TransactionStep = TransactionStep.QUOTE_MADE,
 ) {
+    /*
+        TODO: See if this is useful. Seems like initialDexPriceSol is the price in terms of the token in SOL
+            so that should be good enough for tracking for profit
+     */
     val initialPriceSol
-        get() = when (swapMode) {
-            SwapMode.ExactIn -> BigDecimal(quoteDto?.outAmount) / BigDecimal(quoteDto?.inAmount)
-            SwapMode.ExactOut -> BigDecimal(quoteDto?.inAmount) / BigDecimal(quoteDto?.outAmount)
+        get() = determineInitialPriceSol()
+
+    private fun determineInitialPriceSol(): BigDecimal {
+        val inAmount = BigDecimal(quoteDto?.inAmount).movePointLeft(inToken.decimals)
+        val outAmount = BigDecimal(quoteDto?.outAmount).movePointLeft(outToken.decimals)
+
+        return when (swapMode) {
+            SwapMode.ExactIn -> outAmount / inAmount
+            SwapMode.ExactOut -> inAmount / outAmount
         }
+    }
 //    override fun equals(other: Any?): Boolean {
 //        if (this === other) return true
 //        if (other !is Transaction) return false

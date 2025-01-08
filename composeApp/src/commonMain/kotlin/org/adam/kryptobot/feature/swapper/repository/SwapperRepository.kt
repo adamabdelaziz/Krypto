@@ -248,7 +248,7 @@ class SwapperRepositoryImpl(
         )
 
         Logger.d("Determined price is ${transaction.initialPriceSol} dex price is $initialPrice")
-        
+
         swapList.add(transaction)
         _currentSwaps.value = swapList.toList()
 

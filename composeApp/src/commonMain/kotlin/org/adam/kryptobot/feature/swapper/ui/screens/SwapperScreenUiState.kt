@@ -28,6 +28,9 @@ fun mapSwapScreenUiState(
 ): SwapperScreenUiState {
     val key = selectedPair?.key
     val selectedPairNew = pair.firstOrNull { it.pairAddress == key }?.toDexPairSwapUiModel()
+    /*
+        TODO: when mapping live price refer to repository value and not selected UI value
+     */
     val livePrice = selectedPairNew?.priceSol?.let { BigDecimal(it) } ?: BigDecimal.ZERO
     val hasInstructions = transactionSteps.any { it.swapResponse != null }
     Logger.d("Has instructions in UI $hasInstructions")

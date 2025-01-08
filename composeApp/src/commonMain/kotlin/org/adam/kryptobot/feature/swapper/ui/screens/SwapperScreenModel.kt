@@ -25,6 +25,10 @@ class SwapperScreenModel(
     private val monitorTokenAddressesUseCase: MonitorTokenAddressesUseCase,
 ) : ScreenModel, ScannerRepository by scannerRepository, SwapperRepository by swapperRepository {
 
+    /*
+        TODO: only use _selectedDexPair for the pair address and then get the pair from latestDexPairs
+            when doing any logic since it will become inaccurate after first refresh without clicking on it
+     */
     private val _selectedDexPair = MutableStateFlow<DexPairSwapUiModel?>(null)
 
     val uiState: StateFlow<SwapperScreenUiState> = combineStates(
