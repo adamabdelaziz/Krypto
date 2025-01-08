@@ -7,8 +7,8 @@ data class QuoteParamsConfig(
 //    val inputAddress: String,
 //    val outputAddress: String,
     val amount: Double = 0.0, // Double
-    val slippageBps: Int = 1000, // Int
-    val swapMode: SwapMode = SwapMode.ExactOut,
+    val slippageBps: Int = 100, //Int 1% slippage (100 basis points)
+    val swapMode: SwapMode = SwapMode.ExactIn,
     val dexes: Set<Dex> = setOf(),
     val excludeDexes: Set<Dex> = setOf(),
     val restrictIntermediateTokens: Boolean = false,

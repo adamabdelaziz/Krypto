@@ -27,7 +27,7 @@ fun TransactionView(modifier: Modifier, transaction: TransactionUiModel, onClick
             Column(modifier = Modifier.weight(3f)) {
                 CenteredRow(modifier = Modifier.padding(4.dp)) {
                     BasicText(
-                        text = transaction.inSymbol,
+                        text = transaction.inToken.symbol,
                         color = CurrentColors.onSurface,
                     )
                     Icon(
@@ -38,7 +38,7 @@ fun TransactionView(modifier: Modifier, transaction: TransactionUiModel, onClick
                     )
                     BasicText(
                         modifier = Modifier.padding(end = 4.dp),
-                        text = transaction.outSymbol,
+                        text = transaction.outToken.symbol,
                         color = CurrentColors.onSurface,
                     )
                     BasicText(
@@ -65,7 +65,7 @@ fun TransactionView(modifier: Modifier, transaction: TransactionUiModel, onClick
                             color = CurrentColors.onSurface,
                         )
                         BasicText(
-                            text = transaction.inAmount,
+                            text = transaction.inToken.amount,
                             color = CurrentColors.onSurface,
                         )
                         Icon(
@@ -76,16 +76,29 @@ fun TransactionView(modifier: Modifier, transaction: TransactionUiModel, onClick
                         )
                         BasicText(
                             modifier = Modifier.padding(end = 4.dp),
-                            text = transaction.outAmount,
+                            text = transaction.outToken.amount,
+                            color = CurrentColors.onSurface,
+                        )
+                        transaction.fees?.let {
+                            BasicText(
+                                modifier = Modifier.padding(end = 4.dp),
+                                text = "Fee: $it",
+                                color = CurrentColors.onSurface,
+                            )
+                        }
+                    }
+                    CenteredRow(modifier = Modifier.weight(1f)) {
+                        BasicText(
+                            modifier = Modifier.padding(end = 4.dp),
+                            text = "Initial price SOL: ${transaction.initialPriceSol}",
                             color = CurrentColors.onSurface,
                         )
                         BasicText(
                             modifier = Modifier.padding(end = 4.dp),
-                            text = "Fee: ${transaction.feesLamport}",
+                            text = "Percent Change: ${transaction.percentChange}",
                             color = CurrentColors.onSurface,
                         )
                     }
-
                 }
             }
 

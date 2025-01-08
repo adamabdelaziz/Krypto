@@ -1,6 +1,7 @@
 package org.adam.kryptobot.util
 
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -22,4 +23,12 @@ fun Double.formatToDecimalString(): String {
 
 fun BigDecimal.formatToDecimalString(): String {
     return this.stripTrailingZeros().toPlainString()
+}
+
+fun calculatePercentChange(initialPrice: BigDecimal, livePrice: BigDecimal): BigDecimal {
+    return if (initialPrice > BigDecimal.ZERO) {
+        ((livePrice - initialPrice) / initialPrice * BigDecimal(100)).setScale(2, RoundingMode.HALF_UP)
+    } else {
+        BigDecimal.ZERO
+    }
 }

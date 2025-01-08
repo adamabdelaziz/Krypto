@@ -1,19 +1,23 @@
 package org.adam.kryptobot.feature.scanner.usecase
 
-import cafe.adriel.voyager.core.model.screenModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.enum.TokenCategory
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
+import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase.Companion.SCAN_DELAY
 import org.adam.kryptobot.ui.components.snackbar.SnackbarManager
 import org.adam.kryptobot.util.cancelAndNull
 
 interface MonitorTokenAddressesUseCase {
-    operator fun invoke(tokenCategory: TokenCategory?)
+    operator fun invoke(tokenCategory: TokenCategory?, delay: Long = SCAN_DELAY)
     fun stop()
+
+    companion object {
+        const val SCAN_DELAY = 5000L
+        const val SWAP_SCAN_DELAY = 3000L
+    }
 }
 
 class MonitorTokenAddressesUseCaseImpl(
@@ -23,7 +27,7 @@ class MonitorTokenAddressesUseCaseImpl(
 ): MonitorTokenAddressesUseCase {
     private var monitorJob: Job? = null
 
-    override operator fun invoke(tokenCategory: TokenCategory?) {
+    override operator fun invoke(tokenCategory: TokenCategory?, delay: Long) {
         stop()
         scannerRepository.changeCategory(tokenCategory)
 
@@ -43,9 +47,5 @@ class MonitorTokenAddressesUseCaseImpl(
 
     override fun stop() {
         monitorJob?.cancelAndNull()
-    }
-
-    companion object {
-        private const val SCAN_DELAY = 5000L
     }
 }

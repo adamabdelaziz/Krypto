@@ -15,6 +15,7 @@ import org.adam.kryptobot.feature.swapper.data.SolanaApi
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
 import org.adam.kryptobot.feature.swapper.data.model.Transaction
+import org.adam.kryptobot.feature.swapper.data.model.TransactionToken
 import org.adam.kryptobot.feature.swapper.enum.Status
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
@@ -22,7 +23,6 @@ import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
 import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 import org.adam.kryptobot.util.formatToDecimalString
 import org.adam.kryptobot.util.getSwapTokenAddresses
-import org.adam.kryptobot.util.lamportsToSol
 import java.math.BigDecimal
 import kotlin.math.pow
 
@@ -35,20 +35,25 @@ interface SwapperRepository {
     ): QuoteParamsConfig
 
     /*
+        @param key is the Pair Address
+     */
+    /*
         TODO: Condense params here and just refer to values in the function
      */
     suspend fun getQuote(
+        key: String,
         baseTokenAddress: String?,
         baseTokenSymbol: String?,
         quoteTokenAddress: String?,
         quoteTokenSymbol: String?,
         amount: Double,
+        initialPrice: BigDecimal, // this refers to the SOL price of the token you're buying so you know when to swap back for profit
     )
 
-    suspend fun attemptSwap(quote: String, tokenAddress: String)
+    suspend fun attemptSwap(quote: String, key: String)
     suspend fun attemptSwapInstructions()
 
-    suspend fun performSwapTransaction(quote: String, tokenAddress: String)
+    suspend fun performSwapTransaction(quote: String, key: String)
 
     //TODO change for support for multiple DEX pairs at once(key field in data object instead of maps)
     val quoteConfig: StateFlow<QuoteParamsConfig>
@@ -106,14 +111,17 @@ class SwapperRepositoryImpl(
     }
 
     override suspend fun getQuote(
+        key: String,
         baseTokenAddress: String?,
         baseTokenSymbol: String?,
         quoteTokenAddress: String?,
         quoteTokenSymbol: String?,
         amount: Double,
+        initialPrice: BigDecimal,
     ) {
         if (baseTokenAddress == null || quoteTokenAddress == null) return
 
+        Logger.d("Initial price is $initialPrice")
         val (inputAddress, outputAddress) = getSwapTokenAddresses(
             swapMode = _quoteConfig.value.swapMode,
             baseTokenAddress = baseTokenAddress,
@@ -129,7 +137,9 @@ class SwapperRepositoryImpl(
             try {
                 val decimals = solanaApi.getMintDecimalsAmount(inputAddress)
                 val outDecimals = solanaApi.getMintDecimalsAmount(outputAddress)
-                Logger.d("Decimals for quote is $decimals")
+
+                Logger.d("Decimals for quote input $decimals for output $outDecimals")
+
                 val (quoteRaw, quoteDto) = swapApi.getQuote(
                     inputAddress = inputAddress,
                     outputAddress = outputAddress,
@@ -147,32 +157,48 @@ class SwapperRepositoryImpl(
                     maxAutoSlippageBps = _quoteConfig.value.maxAutoSlippageBps,
                     autoSlippageCollisionUsdValue = _quoteConfig.value.autoSlippageCollisionUsdValue
                 )
+
                 quoteDto?.routePlan?.forEach {
                     Logger.d("${it.swapInfo.feeMint} : ${it.swapInfo.feeAmount} : ${it.swapInfo.ammKey} : ${it.swapInfo.label}}")
                 }
+
                 Logger.d("Raw amounts In: ${quoteDto?.inAmount} Out: ${quoteDto?.outAmount}")
-                val readableIn = adjustTokenAmount(quoteDto?.inAmount ?: "", decimals)
-                val readableOut = adjustTokenAmount(quoteDto?.outAmount ?: "", outDecimals)
+
+                val readableIn = adjustTokenAmount(quoteDto?.inAmount ?: "0", decimals)
+                val readableOut = adjustTokenAmount(quoteDto?.outAmount ?: "0", outDecimals)
+
                 Logger.d("Human readable attempt in: $readableIn")
                 Logger.d("Human readable attempt out: $readableOut")
+
                 Logger.d("In mint ${quoteDto?.inputMint} is Solana ${quoteDto?.inputMint == SOLANA_MINT_ADDRESS}")
                 Logger.d("Out mint ${quoteDto?.outputMint} is Solana ${quoteDto?.outputMint == SOLANA_MINT_ADDRESS}")
-                /*
-                    TODO: Confirm if fees are similar and adjust UI and mapping accordingly so it makes sense
-                 */
+
+                val inputToken = TransactionToken(
+                    symbol = inputSymbol,
+                    address = inputAddress,
+                    amount = readableIn,
+                    amountLamports = quoteDto?.inAmount?.toLong() ?: 0,
+                    decimals = decimals
+                )
+
+                val outputToken = TransactionToken(
+                    symbol = outputSymbol,
+                    address = outputAddress,
+                    amount = readableOut,
+                    amountLamports =  quoteDto?.outAmount?.toLong() ?: 0,
+                    decimals =  outDecimals
+                )
+
                 quoteRaw?.let {
                     createTransaction(
+                        key = key,
                         quote = it,
-                        baseTokenAddress = baseTokenAddress,
                         amount = amount,
                         quoteDto = quoteDto,
-                        inputSymbol = inputSymbol,
-                        outputSymbol = outputSymbol,
-                        inputAddress = inputAddress,
-                        outputAddress = outputAddress,
-                        inputAmount = quoteDto?.inAmount ?: "",
-                        outputAmount = quoteDto?.outAmount ?: "",
-                        swapMode = _quoteConfig.value.swapMode
+                        inputToken = inputToken,
+                        outputToken = outputToken,
+                        swapMode = _quoteConfig.value.swapMode,
+                        initialPrice = initialPrice
                     )
                 }
             } catch (e: Exception) {
@@ -181,69 +207,83 @@ class SwapperRepositoryImpl(
         }
     }
 
-    private fun formatTokenAmountForQuote(amount: Double, decimals: Int): String =
-        ((amount * 10.0.pow(decimals)).toLong()).toString()
+    private fun formatTokenAmountForQuote(amount: Double, decimals: Int): String {
+        return ((amount * 10.0.pow(decimals)).toLong()).toString()
+    }
 
     private fun adjustTokenAmount(amount: String, decimals: Int): BigDecimal {
         return BigDecimal(amount).movePointLeft(decimals)
     }
 
     private fun createTransaction(
+        key: String,
         quote: String,
-        baseTokenAddress: String,
         amount: Double,
         quoteDto: JupiterQuoteDto?,
-        inputSymbol: String,
-        outputSymbol: String,
-        inputAddress: String,
-        outputAddress: String,
-        inputAmount: String,
-        outputAmount: String,
-        swapMode: SwapMode
+        inputToken: TransactionToken,
+        outputToken: TransactionToken,
+        swapMode: SwapMode,
+        initialPrice: BigDecimal,
     ) {
         val currentMap = _currentSwaps.value.toMutableMap()
-        val swapList = currentMap.getOrDefault(baseTokenAddress, emptyList()).toMutableList()
+        val swapList = currentMap.getOrDefault(key, emptyList()).toMutableList()
+
+        val fee = quoteDto?.let {
+            Logger.d("Platform fee null: ${it.platformFee == null}")
+            getTotalFees(it,  inputToken.decimals).formatToDecimalString()
+        }
+
+        Logger.d("Readable fee is $fee")
 
         val transaction = Transaction(
             quoteRaw = quote,
             amount = amount,
             quoteDto = quoteDto,
-            inputSymbol = inputSymbol,
-            outputSymbol = outputSymbol,
-            inputAddress = inputAddress,
-            outputAddress = outputAddress,
             swapMode = swapMode,
-            inputAmount = inputAmount,
-            outputAmount = outputAmount,
+            inToken = inputToken,
+            outToken = outputToken,
+            fee = fee,
+            initialPriceSol = initialPrice
         )
+
         swapList.add(transaction)
 
-        currentMap[baseTokenAddress] = swapList.toList()
+        currentMap[key] = swapList.toList()
         _currentSwaps.value = currentMap.toMap()
     }
 
-    private fun updateTransaction(tokenAddress: String, updatedTransaction: Transaction) {
+    private fun updateTransaction(key: String, updatedTransaction: Transaction) {
         val currentMap = _currentSwaps.value.toMutableMap()
-        val swapList = currentMap[tokenAddress]?.toMutableList() ?: return
+        val swapList = currentMap[key]?.toMutableList() ?: return
 
         val index = swapList.indexOfFirst { it.quoteRaw == updatedTransaction.quoteRaw }
         if (index != -1) {
             swapList[index] = updatedTransaction
-            currentMap[tokenAddress] = swapList.toList()
+            currentMap[key] = swapList.toList()
             _currentSwaps.value = currentMap.toMap()
         }
     }
 
-    private fun getTransaction(quote: String, tokenAddress: String): Transaction? {
-        return _currentSwaps.value[tokenAddress]?.firstOrNull { it.quoteRaw == quote }
+    private fun getTransaction(quote: String, key: String): Transaction? {
+        return _currentSwaps.value[key]?.firstOrNull { it.quoteRaw == quote }
     }
 
+    private fun getTotalFees(quote: JupiterQuoteDto, inputDecimals: Int): BigDecimal {
+        val routeFees = quote.routePlan.map {
+            val feeDecimals = solanaApi.getMintDecimalsAmount(it.swapInfo.feeMint)
+            it.swapInfo.feeAmount.toBigDecimal().movePointLeft(feeDecimals)
+        }.fold(BigDecimal.ZERO) { acc, fee -> acc + fee }
+
+        val platformFee = quote.platformFee?.amount?.toBigDecimal()?.movePointLeft(inputDecimals) ?: BigDecimal.ZERO
+        Logger.d("Platform fee is $platformFee")
+        return routeFees + platformFee
+    }
     /*
         This works as the step after quote
         Will need to pass around quote and token address to ensure its referring to the correct quote in the List<TransactionStep>
      */
-    override suspend fun attemptSwap(quote: String, tokenAddress: String) {
-        val transactionStep = getTransaction(quote, tokenAddress)
+    override suspend fun attemptSwap(quote: String, key: String) {
+        val transactionStep = getTransaction(quote, key)
         withContext(Dispatchers.IO) {
             try {
                 transactionStep?.let { step ->
@@ -253,7 +293,7 @@ class SwapperRepositoryImpl(
                     )
                     instructions?.let {
                         val updatedStep = step.copy(swapResponse = it)
-                        updateTransaction(tokenAddress, updatedStep)
+                        updateTransaction(key, updatedStep)
                         Logger.d("Instructions are $it")
                         //val encoding = detectEncoding(it.swapTransaction)
                         //Logger.d("Encoding is $encoding")
@@ -296,8 +336,8 @@ class SwapperRepositoryImpl(
         This is the one that works
         Similarly will need the specific quote and token address
      */
-    override suspend fun performSwapTransaction(quote: String, tokenAddress: String) {
-        val transactionStep = getTransaction(quote, tokenAddress)
+    override suspend fun performSwapTransaction(quote: String, key: String) {
+        val transactionStep = getTransaction(quote, key)
         transactionStep?.swapResponse?.let {
             withContext(Dispatchers.IO) {
                 try {
@@ -310,7 +350,7 @@ class SwapperRepositoryImpl(
                         transactionSignature = result.getOrNull(),
                         status = if (result.isSuccess) Status.SUCCESS else Status.FAIL
                     )
-                    updateTransaction(tokenAddress, updatedStep)
+                    updateTransaction(key, updatedStep)
                 } catch (e: Exception) {
                     Logger.d("Exception performing swap transaction ${e.message}")
                     e.printStackTrace()

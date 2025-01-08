@@ -97,10 +97,11 @@ fun DexPair.toDexPairScanUiModel(isBeingTracked: Boolean): DexPairScanUiModel {
  */
 fun DexPair.toDexPairSwapUiModel(): DexPairSwapUiModel {
     return DexPairSwapUiModel(
+        key = this.pairAddress ?: "NULL",
         dexId = this.dexId,
         baseToken = this.baseToken,
         quoteToken = this.quoteToken,
-        priceNative = this.priceNative,
+        priceSol = this.priceNative,
         priceUsd = this.priceUsd,
         liquidity = this.liquidity,
         marketCap = this.marketCap,

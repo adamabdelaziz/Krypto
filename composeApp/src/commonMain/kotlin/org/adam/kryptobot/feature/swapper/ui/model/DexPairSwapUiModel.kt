@@ -2,19 +2,17 @@ package org.adam.kryptobot.feature.swapper.ui.model
 
 import org.adam.kryptobot.feature.scanner.data.dto.Info
 import org.adam.kryptobot.feature.scanner.data.dto.Liquidity
-import org.adam.kryptobot.feature.scanner.data.dto.PriceChange
 import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
-import org.adam.kryptobot.feature.scanner.data.dto.Transactions
-import org.adam.kryptobot.feature.scanner.data.dto.Volume
 
 /*
     TODO map all API objects to values that are actually being used
  */
 data class DexPairSwapUiModel(
+    val key: String,
     val dexId: String? = null,
     val baseToken: TokenDto? = null,
     val quoteToken: TokenDto? = null,
-    val priceNative: String? = null,
+    val priceSol: String? = null,
     val priceUsd: String? = null,
     val liquidity: Liquidity? = null,
     val marketCap: Double? = null,

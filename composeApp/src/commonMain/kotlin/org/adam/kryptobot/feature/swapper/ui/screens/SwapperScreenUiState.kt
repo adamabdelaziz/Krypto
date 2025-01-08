@@ -1,5 +1,6 @@
 package org.adam.kryptobot.feature.swapper.ui.screens
 
+import co.touchlab.kermit.Logger
 import org.adam.kryptobot.feature.scanner.data.mappers.toDexPairSwapUiModel
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.enum.Chain
@@ -9,6 +10,7 @@ import org.adam.kryptobot.feature.swapper.data.model.Transaction
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 import org.adam.kryptobot.feature.swapper.ui.model.TransactionUiModel
 import org.adam.kryptobot.util.filterIf
+import java.math.BigDecimal
 
 data class SwapperScreenUiState(
     val pair: List<DexPairSwapUiModel> = listOf(),
@@ -24,6 +26,9 @@ fun mapSwapScreenUiState(
     quoteConfig: QuoteParamsConfig,
     transactionSteps: Map<String, List<Transaction>>,
 ): SwapperScreenUiState {
+    val key = selectedPair?.key
+    val selectedPairNew = pair.firstOrNull { it.pairAddress == key }?.toDexPairSwapUiModel()
+    val livePrice = selectedPairNew?.priceSol?.let { BigDecimal(it) } ?: BigDecimal.ZERO
 
     return SwapperScreenUiState(
         pair = pair.filter { trackedTokenAddresses.contains(it.baseToken?.address) }
@@ -31,7 +36,7 @@ fun mapSwapScreenUiState(
                 !quoteConfig.excludeDexes.any { dex -> dex.name.equals(pair.dexId, ignoreCase = true) }
             }.filter { it.chainId.equals(Chain.Solana.name, ignoreCase = true) }.map { it.toDexPairSwapUiModel() },
         quoteParams = quoteConfig,
-        selectedPair = selectedPair,
-        selectedTransactionSteps = transactionSteps[selectedPair?.baseToken?.address]?.map { it.toTransactionUiModel() } ?: listOf()
+        selectedPair = selectedPairNew,
+        selectedTransactionSteps = transactionSteps[key]?.map { it.toTransactionUiModel(livePrice) } ?: listOf()
     )
 }

@@ -1,5 +1,6 @@
 package org.adam.kryptobot.feature.swapper.data.dto
 
+import co.touchlab.kermit.Logger
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
 

@@ -2,26 +2,26 @@ package org.adam.kryptobot.feature.swapper.data.mappers
 
 import org.adam.kryptobot.feature.swapper.data.dto.getTotalFees
 import org.adam.kryptobot.feature.swapper.data.model.Transaction
+import org.adam.kryptobot.feature.swapper.data.model.toUi
 import org.adam.kryptobot.feature.swapper.ui.model.TransactionUiModel
+import org.adam.kryptobot.util.calculatePercentChange
 import org.adam.kryptobot.util.formatToDecimalString
 import org.adam.kryptobot.util.lamportsToSol
-import org.adam.kryptobot.util.solToLamports
 import java.math.BigDecimal
 
-fun Transaction.toTransactionUiModel(): TransactionUiModel {
-    val fees = this.quoteDto?.getTotalFees() ?: BigDecimal.ZERO
+fun Transaction.toTransactionUiModel(livePrice: BigDecimal): TransactionUiModel {
+    val percentChange = calculatePercentChange(this.initialPriceSol, livePrice)
 
     return TransactionUiModel(
         amount = this.amount.formatToDecimalString(),
         swapMode = this.swapMode,
-        inSymbol = this.inputSymbol,
-        outSymbol = this.outputSymbol,
+        inToken = this.inToken.toUi(),
+        outToken = this.outToken.toUi(),
         transactionStep = this.transactionStep,
         slippageBps = this.quoteDto?.slippageBps ?: 0,
-        inAmount = this.inputAmount,
-        outAmount = this.outputAmount,
-        feesLamport = fees.toPlainString(),
-        feesSol = lamportsToSol(fees.toLong()).formatToDecimalString(),
+        fees = this.fee,
+        initialPriceSol = this.initialPriceSol.formatToDecimalString(),
+        percentChange = percentChange.toString(),
     )
 }
 

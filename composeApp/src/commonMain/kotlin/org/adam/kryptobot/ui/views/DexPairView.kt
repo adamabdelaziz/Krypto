@@ -352,7 +352,7 @@ fun PairSwapCard(modifier: Modifier = Modifier, pair: DexPairSwapUiModel, select
                 )
                 Text(
                     modifier = Modifier.padding(end = 8.dp),
-                    text = "Lamports: ${pair.priceNative}",
+                    text = "SOL: ${pair.priceSol}",
                     style = CurrentTypography.body1
                 )
             }

@@ -54,7 +54,7 @@ class SwapperScreen : Screen {
                 items(state.pair) {
                     PairSwapCard(
                         modifier = Modifier.padding(bottom = 8.dp),
-                        selected = it == state.selectedPair,
+                        selected = it.key == state.selectedPair?.key,
                         pair = it,
                         onClick = {
                             onEvent(SwapperScreenEvent.OnDexPairClicked(it))

@@ -1,17 +1,19 @@
 package org.adam.kryptobot.feature.swapper.ui.model
 
+import org.adam.kryptobot.feature.swapper.data.model.Transaction
+import org.adam.kryptobot.feature.swapper.data.model.TransactionToken
+import org.adam.kryptobot.feature.swapper.data.model.TransactionTokenUi
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 
-data class TransactionUiModel (
+data class TransactionUiModel(
     val amount: String,
+    val initialPriceSol: String,
+    val percentChange: String,
     val swapMode: SwapMode,
-    val inSymbol: String,
-    val outSymbol: String,
-    val inAmount: String,
-    val outAmount: String,
+    val inToken: TransactionTokenUi,
+    val outToken: TransactionTokenUi,
     val transactionStep: TransactionStep,
-    val feesLamport:String,
-    val feesSol:String,
+    val fees: String?,
     val slippageBps: Int,
 )

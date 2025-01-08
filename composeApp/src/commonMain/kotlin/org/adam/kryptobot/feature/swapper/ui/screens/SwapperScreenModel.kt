@@ -3,6 +3,7 @@ package org.adam.kryptobot.feature.swapper.ui.screens
 import androidx.compose.runtime.derivedStateOf
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import co.touchlab.kermit.Logger
 import com.zhuinden.flowcombinetuplekt.combineStates
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -11,10 +12,12 @@ import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
+import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCaseImpl
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.feature.swapper.repository.SwapperRepository
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 import org.adam.kryptobot.feature.wallet.repository.WalletRepository
+import java.math.BigDecimal
 
 class SwapperScreenModel(
     private val swapperRepository: SwapperRepository,
@@ -25,6 +28,7 @@ class SwapperScreenModel(
     MonitorTokenAddressesUseCase by monitorTokenAddressesUseCase {
 
     private val _selectedDexPair = MutableStateFlow<DexPairSwapUiModel?>(null)
+
     val uiState: StateFlow<SwapperScreenUiState> = combineStates(
         screenModelScope,
         SharingStarted.WhileSubscribed(),
@@ -38,7 +42,7 @@ class SwapperScreenModel(
 
     init {
         monitorTokenAddressesUseCase.stop()
-        monitorTokenAddressesUseCase(null)
+        monitorTokenAddressesUseCase(null, MonitorTokenAddressesUseCase.SWAP_SCAN_DELAY)
     }
 
     fun onEvent(event: SwapperScreenEvent) {
@@ -132,7 +136,7 @@ class SwapperScreenModel(
     }
 
     private fun getQuote(dexPair: DexPairSwapUiModel) {
-
+        Logger.d("Price SOL is ${dexPair.priceSol}")
         screenModelScope.launch {
             getQuote(
                 baseTokenAddress = dexPair.baseToken?.address,
@@ -140,6 +144,8 @@ class SwapperScreenModel(
                 quoteTokenAddress = dexPair.quoteToken?.address,
                 quoteTokenSymbol = dexPair.quoteToken?.symbol,
                 amount = quoteConfig.value.amount,
+                initialPrice =  BigDecimal(dexPair.priceSol),
+                key = dexPair.key
             )
         }
     }
