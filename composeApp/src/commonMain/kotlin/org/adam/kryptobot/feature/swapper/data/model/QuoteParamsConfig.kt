@@ -10,7 +10,7 @@ data class QuoteParamsConfig(
     val slippageBps: Int = 100, //Int 1% slippage (100 basis points)
     val swapMode: SwapMode = SwapMode.ExactIn,
     val dexes: Set<Dex> = setOf(),
-    val excludeDexes: Set<Dex> = setOf(),
+    val excludeDexes: Set<Dex> = setOf(Dex.Orca, Dex.Uniswap, Dex.Meteora),
     val restrictIntermediateTokens: Boolean = false,
     val onlyDirectRoutes: Boolean = false,
     val asLegacyTransaction: Boolean = false,

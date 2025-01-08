@@ -18,10 +18,10 @@ import org.adam.kryptobot.feature.swapper.data.model.Transaction
 import org.adam.kryptobot.feature.swapper.data.model.TransactionToken
 import org.adam.kryptobot.feature.swapper.enum.Status
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
+import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
 import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
-import org.adam.kryptobot.util.formatToDecimalString
 import org.adam.kryptobot.util.getSwapTokenAddresses
 import java.math.BigDecimal
 import kotlin.math.pow
@@ -50,6 +50,10 @@ interface SwapperRepository {
         initialPrice: BigDecimal, // this refers to the SOL price of the token you're buying so you know when to swap back for profit
     )
 
+    /*
+        TODO: Expose an "auto" parameter for later so that it immediately finishes the swap
+         and not just gets the instructions and waits for UX
+     */
     suspend fun attemptSwap(quote: String, key: String)
     suspend fun attemptSwapInstructions()
 
@@ -57,7 +61,7 @@ interface SwapperRepository {
 
     //TODO change for support for multiple DEX pairs at once(key field in data object instead of maps)
     val quoteConfig: StateFlow<QuoteParamsConfig>
-    val currentSwaps: StateFlow<Map<String, List<Transaction>>>  //Token address key and list of associated swaps done on it
+    val currentSwaps: StateFlow<List<Transaction>>  //Token address key and list of associated swaps done on it
 }
 
 class SwapperRepositoryImpl(
@@ -67,11 +71,9 @@ class SwapperRepositoryImpl(
     private val solanaApi: SolanaApi,
 ) : SwapperRepository {
 
-    private val _currentSwaps: MutableStateFlow<Map<String, List<Transaction>>> =
-        MutableStateFlow(
-            mapOf()
-        )
-    override val currentSwaps: StateFlow<Map<String, List<Transaction>>> =
+    private val _currentSwaps: MutableStateFlow< List<Transaction>> =
+        MutableStateFlow(listOf())
+    override val currentSwaps: StateFlow<List<Transaction>> =
         _currentSwaps.stateIn(
             scope = stateFlowScope,
             initialValue = _currentSwaps.value,
@@ -185,8 +187,8 @@ class SwapperRepositoryImpl(
                     symbol = outputSymbol,
                     address = outputAddress,
                     amount = readableOut,
-                    amountLamports =  quoteDto?.outAmount?.toLong() ?: 0,
-                    decimals =  outDecimals
+                    amountLamports = quoteDto?.outAmount?.toLong() ?: 0,
+                    decimals = outDecimals
                 )
 
                 quoteRaw?.let {
@@ -215,7 +217,7 @@ class SwapperRepositoryImpl(
         return BigDecimal(amount).movePointLeft(decimals)
     }
 
-    private fun createTransaction(
+    private suspend fun createTransaction(
         key: String,
         quote: String,
         amount: Double,
@@ -225,12 +227,11 @@ class SwapperRepositoryImpl(
         swapMode: SwapMode,
         initialPrice: BigDecimal,
     ) {
-        val currentMap = _currentSwaps.value.toMutableMap()
-        val swapList = currentMap.getOrDefault(key, emptyList()).toMutableList()
+        val swapList = _currentSwaps.value.toMutableList()
 
         val fee = quoteDto?.let {
             Logger.d("Platform fee null: ${it.platformFee == null}")
-            getTotalFees(it,  inputToken.decimals)
+            getTotalFees(it, inputToken.decimals)
         } ?: BigDecimal.ZERO
 
         Logger.d("Readable fee is $fee")
@@ -243,29 +244,35 @@ class SwapperRepositoryImpl(
             inToken = inputToken,
             outToken = outputToken,
             fee = fee,
-            initialPriceSol = initialPrice
+            initialDexPriceSol = initialPrice
         )
 
+        Logger.d("Determined price is ${transaction.initialPriceSol} dex price is $initialPrice")
+        
         swapList.add(transaction)
+        _currentSwaps.value = swapList.toList()
 
-        currentMap[key] = swapList.toList()
-        _currentSwaps.value = currentMap.toMap()
+        attemptSwap(quote, key)
     }
 
-    private fun updateTransaction(key: String, updatedTransaction: Transaction) {
-        val currentMap = _currentSwaps.value.toMutableMap()
-        val swapList = currentMap[key]?.toMutableList() ?: return
+    private fun updateTransaction(updatedTransaction: Transaction) {
+        val swapList = _currentSwaps.value.toMutableList()
 
-        val index = swapList.indexOfFirst { it.quoteRaw == updatedTransaction.quoteRaw }
-        if (index != -1) {
-            swapList[index] = updatedTransaction
-            currentMap[key] = swapList.toList()
-            _currentSwaps.value = currentMap.toMap()
-        }
+        val updatedSwapList = swapList.map {
+            if (it.quoteRaw == updatedTransaction.quoteRaw) updatedTransaction else it.copy()
+        }.toMutableList()
+
+        _currentSwaps.value = emptyList()
+        _currentSwaps.value = updatedSwapList.toList()
+
+        val hasInTransaction = updatedTransaction.swapResponse != null
+        val hasInstructions = _currentSwaps.value.any { it.swapResponse != null }
+
+        Logger.d("hasInstructions: $hasInstructions, hasInTransaction: $hasInTransaction")
     }
 
-    private fun getTransaction(quote: String, key: String): Transaction? {
-        return _currentSwaps.value[key]?.firstOrNull { it.quoteRaw == quote }
+    private fun getTransaction(quote: String): Transaction? {
+        return _currentSwaps.value.firstOrNull { it.quoteRaw == quote }
     }
 
     private fun getTotalFees(quote: JupiterQuoteDto, inputDecimals: Int): BigDecimal {
@@ -278,23 +285,26 @@ class SwapperRepositoryImpl(
         Logger.d("Platform fee is $platformFee")
         return routeFees + platformFee
     }
+
     /*
         This works as the step after quote
         Will need to pass around quote and token address to ensure its referring to the correct quote in the List<TransactionStep>
+        TODO: Likely rename function since its not actually performing the swap just getting the instructions.
+                GET KEY FROM WALLET AND NOT CONSTANTS
      */
     override suspend fun attemptSwap(quote: String, key: String) {
-        val transactionStep = getTransaction(quote, key)
+        val transaction = getTransaction(quote)
         withContext(Dispatchers.IO) {
             try {
-                transactionStep?.let { step ->
+                transaction?.let { tx ->
                     val instructions = swapApi.swapTokens(
-                        quoteResponse = step.quoteRaw,
+                        quoteResponse = tx.quoteRaw,
                         userPublicKey = SECOND_WALLET_PUBLIC_KEY
                     )
                     instructions?.let {
-                        val updatedStep = step.copy(swapResponse = it)
-                        updateTransaction(key, updatedStep)
-                        Logger.d("Instructions are $it")
+                        val updatedTransaction = tx.copy(swapResponse = it, transactionStep = TransactionStep.INSTRUCTIONS_MADE)
+                        updateTransaction(updatedTransaction)
+                        //Logger.d("Instructions are $it")
                         //val encoding = detectEncoding(it.swapTransaction)
                         //Logger.d("Encoding is $encoding")
                     } ?: run {
@@ -337,7 +347,7 @@ class SwapperRepositoryImpl(
         Similarly will need the specific quote and token address
      */
     override suspend fun performSwapTransaction(quote: String, key: String) {
-        val transactionStep = getTransaction(quote, key)
+        val transactionStep = getTransaction(quote)
         transactionStep?.swapResponse?.let {
             withContext(Dispatchers.IO) {
                 try {
@@ -350,7 +360,7 @@ class SwapperRepositoryImpl(
                         transactionSignature = result.getOrNull(),
                         status = if (result.isSuccess) Status.SUCCESS else Status.FAIL
                     )
-                    updateTransaction(key, updatedStep)
+                    updateTransaction(updatedStep)
                 } catch (e: Exception) {
                     Logger.d("Exception performing swap transaction ${e.message}")
                     e.printStackTrace()

@@ -10,24 +10,29 @@ import java.math.BigDecimal
 data class Transaction(
     val quoteRaw: String,
     val amount: Double, //effectively the inToken.amount but its what is typed in when first making the quote
-    val initialPriceSol: BigDecimal,
+    val initialDexPriceSol: BigDecimal,
     val inToken: TransactionToken,
     val outToken: TransactionToken,
     val swapMode: SwapMode,
     val fee: BigDecimal = BigDecimal.ZERO,
     val quoteDto: JupiterQuoteDto? = null,
-    val swapResponse: JupiterSwapResponseDto?= null,
+    val swapResponse: JupiterSwapResponseDto? = null,
     val transactionSignature: String? = null,
     val status: Status = Status.PENDING,
     val transactionStep: TransactionStep = TransactionStep.QUOTE_MADE,
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Transaction) return false
-        return quoteRaw == other.quoteRaw
-    }
-
-    override fun hashCode(): Int {
-        return quoteRaw.hashCode()
-    }
+    val initialPriceSol
+        get() = when (swapMode) {
+            SwapMode.ExactIn -> BigDecimal(quoteDto?.outAmount) / BigDecimal(quoteDto?.inAmount)
+            SwapMode.ExactOut -> BigDecimal(quoteDto?.inAmount) / BigDecimal(quoteDto?.outAmount)
+        }
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (other !is Transaction) return false
+//        return quoteRaw == other.quoteRaw
+//    }
+//
+//    override fun hashCode(): Int {
+//        return quoteRaw.hashCode()
+//    }
 }

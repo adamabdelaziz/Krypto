@@ -245,11 +245,12 @@ class ScannerRepositoryImpl(
     override fun trackPair(baseTokenAddress: String?, toggle: Boolean) {
         baseTokenAddress?.let {
             val trackedSet = _trackedTokenAddresses.value.toMutableSet()
-            if (toggle) {
+            val alreadyAdded = trackedSet.add(it)
+
+            if (toggle && alreadyAdded) {
                 trackedSet.remove(it)
-            } else {
-                trackedSet.add(it)
             }
+
             _trackedTokenAddresses.value = trackedSet
         }
     }
