@@ -33,7 +33,7 @@ data class Transaction(
         val outAmount = BigDecimal(quoteDto?.outAmount).movePointLeft(outToken.decimals)
 
         return when (swapMode) {
-            SwapMode.ExactIn -> outAmount / inAmount
+            SwapMode.ExactIn -> outAmount / inAmount    
             SwapMode.ExactOut -> inAmount / outAmount
         }
     }

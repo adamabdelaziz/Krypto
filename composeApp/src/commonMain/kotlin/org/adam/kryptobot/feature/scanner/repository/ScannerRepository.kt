@@ -151,6 +151,7 @@ class ScannerRepositoryImpl(
     }
 
     override suspend fun getDexPairsByAddressList(category: TokenCategory?) {
+        _selectedTokenCategory.value = category
         withContext(Dispatchers.IO) {
             try {
                 val addresses = when (category) {
@@ -247,7 +248,7 @@ class ScannerRepositoryImpl(
             val trackedSet = _trackedTokenAddresses.value.toMutableSet()
             val alreadyAdded = trackedSet.add(it)
 
-            if (toggle && alreadyAdded) {
+            if (toggle && !alreadyAdded) {
                 trackedSet.remove(it)
             }
 
