@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -31,6 +36,7 @@ import org.adam.kryptobot.ui.components.ValidatedTextField
 import org.adam.kryptobot.ui.views.PairSwapCard
 import org.adam.kryptobot.ui.theme.CurrentColors
 import org.adam.kryptobot.ui.views.TransactionView
+import org.adam.kryptobot.util.HandleScreenEnter
 import org.adam.kryptobot.util.toStringOrEmpty
 
 class SwapperScreen : Screen {
@@ -40,6 +46,8 @@ class SwapperScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = navigator.koinNavigatorScreenModel<SwapperScreenModel>()
         val state: SwapperScreenUiState by screenModel.uiState.collectAsState(SwapperScreenUiState())
+
+        HandleScreenEnter(navigator, this) { screenModel.onScreenEnter() }
 
         SwapperScreenContent(state = state, onEvent = screenModel::onEvent)
     }
@@ -63,9 +71,6 @@ class SwapperScreen : Screen {
                 }
             }
             Column(modifier = Modifier.weight(2f)) {
-                /*
-                   Separate composables for quote config, buy/sell params, etc.
-                 */
                 BasicCard {
                     CenteredRow {
                         ValidatedTextField(

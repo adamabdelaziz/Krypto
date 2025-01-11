@@ -26,14 +26,7 @@ fun mapSwapScreenUiState(
     quoteConfig: QuoteParamsConfig,
     transactionSteps: List<Transaction>,
 ): SwapperScreenUiState {
-    val key = selectedPair?.key
-    val selectedPairNew = pair.firstOrNull { it.pairAddress == key }?.toDexPairSwapUiModel()
-    /*
-        TODO: when mapping live price refer to repository value and not selected UI value
-     */
-    val livePrice = selectedPairNew?.priceSol?.let { BigDecimal(it) } ?: BigDecimal.ZERO
-    val hasInstructions = transactionSteps.any { it.swapResponse != null }
-    Logger.d("Has instructions in UI $hasInstructions")
+    val livePrice = selectedPair?.priceSol?.let { BigDecimal(it) } ?: BigDecimal.ZERO
 
     return SwapperScreenUiState(
         pair = pair.filter { trackedTokenAddresses.contains(it.baseToken?.address) }
@@ -41,7 +34,7 @@ fun mapSwapScreenUiState(
                 !quoteConfig.excludeDexes.any { dex -> dex.name.equals(pair.dexId, ignoreCase = true) }
             }.filter { it.chainId.equals(Chain.Solana.name, ignoreCase = true) }.map { it.toDexPairSwapUiModel() },
         quoteParams = quoteConfig,
-        selectedPair = selectedPairNew,
+        selectedPair = selectedPair,
         selectedTransactionSteps = transactionSteps.filter { it.inToken.address == selectedPair?.baseToken?.address || it.outToken.address == selectedPair?.baseToken?.address }
             .map { it.toTransactionUiModel(livePrice) }
     )

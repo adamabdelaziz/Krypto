@@ -151,7 +151,6 @@ class ScannerRepositoryImpl(
     }
 
     override suspend fun getDexPairsByAddressList(category: TokenCategory?) {
-        _selectedTokenCategory.value = category
         withContext(Dispatchers.IO) {
             try {
                 val addresses = when (category) {

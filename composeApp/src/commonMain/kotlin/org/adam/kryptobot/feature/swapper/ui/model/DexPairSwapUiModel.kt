@@ -8,7 +8,7 @@ import org.adam.kryptobot.feature.scanner.data.dto.TokenDto
     TODO map all API objects to values that are actually being used
  */
 data class DexPairSwapUiModel(
-    val key: String, //TODO remove this but it was the Pair Address
+    val key: String, //TODO  not using this as trasnaction map key but it is the Pair Address and its how the VM will get the good object in the repo
     val dexId: String? = null,
     val baseToken: TokenDto? = null,
     val quoteToken: TokenDto? = null,

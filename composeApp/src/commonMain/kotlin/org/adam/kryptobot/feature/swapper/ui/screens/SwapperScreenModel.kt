@@ -1,15 +1,18 @@
 package org.adam.kryptobot.feature.swapper.ui.screens
 
-import androidx.compose.runtime.derivedStateOf
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.lifecycle.NavigatorDisposable
 import co.touchlab.kermit.Logger
 import com.zhuinden.flowcombinetuplekt.combineStates
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.adam.kryptobot.feature.scanner.enum.Dex
+import org.adam.kryptobot.feature.scanner.data.mappers.toDexPairSwapUiModel
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
@@ -17,6 +20,7 @@ import org.adam.kryptobot.feature.swapper.repository.SwapperRepository
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 import org.adam.kryptobot.feature.wallet.repository.WalletRepository
 import java.math.BigDecimal
+import javax.swing.plaf.nimbus.State
 
 class SwapperScreenModel(
     private val swapperRepository: SwapperRepository,
@@ -25,36 +29,42 @@ class SwapperScreenModel(
     private val monitorTokenAddressesUseCase: MonitorTokenAddressesUseCase,
 ) : ScreenModel, ScannerRepository by scannerRepository, SwapperRepository by swapperRepository {
 
-    /*
-        TODO: only use _selectedDexPair for the pair address and then get the pair from latestDexPairs
-            when doing any logic since it will become inaccurate after first refresh without clicking on it
-     */
-    private val _selectedDexPair = MutableStateFlow<DexPairSwapUiModel?>(null)
+    private val _selectedDexKey = MutableStateFlow<String?>(null)
+    private val selectedDexPair: StateFlow<DexPairSwapUiModel?> = combine(
+        _selectedDexKey,
+        latestDexPairs
+    ) { key, pairs ->
+        val pair = pairs.firstOrNull { it.pairAddress == key }
+        pair?.toDexPairSwapUiModel()
+    }.stateIn(
+        scope = screenModelScope,
+        initialValue = null,
+        started = SharingStarted.WhileSubscribed(5000),
+    )
 
     val uiState: StateFlow<SwapperScreenUiState> = combineStates(
         screenModelScope,
         SharingStarted.WhileSubscribed(),
         latestDexPairs,
         trackedTokenAddresses,
-        _selectedDexPair,
+        selectedDexPair,
         quoteConfig,
         currentSwaps,
         ::mapSwapScreenUiState
     )
 
-    init {
-        monitorTokenAddressesUseCase.stop()
+    fun onScreenEnter() {
         monitorTokenAddressesUseCase(null, MonitorTokenAddressesUseCase.SWAP_SCAN_DELAY)
     }
 
     fun onEvent(event: SwapperScreenEvent) {
         when (event) {
             is SwapperScreenEvent.OnDexPairClicked -> {
-                _selectedDexPair.value = event.dexPair
+                _selectedDexKey.value = event.dexPair.key
             }
 
             is SwapperScreenEvent.OnGetQuoteClicked -> {
-                _selectedDexPair.value?.let {
+                selectedDexPair.value?.let {
                     getQuote(it)
                 }
             }
@@ -151,4 +161,5 @@ class SwapperScreenModel(
             )
         }
     }
+
 }
