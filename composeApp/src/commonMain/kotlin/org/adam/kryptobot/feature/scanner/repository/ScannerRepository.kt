@@ -32,7 +32,7 @@ interface ScannerRepository {
     val trackedTokenAddresses: StateFlow<Set<String>>
     val tokens: StateFlow<List<Token>>
     val latestDexPairs: StateFlow<List<DexPair>>
-    val ordersPaidForByTokenAddress: StateFlow<List<PaymentStatusDto>>
+    val ordersPaidForByTokenAddress: StateFlow<List<PaymentStatusDto>> //TODO see if this is even necessary then remove all of it
     val selectedTokenCategory: StateFlow<TokenCategory?>
 }
 

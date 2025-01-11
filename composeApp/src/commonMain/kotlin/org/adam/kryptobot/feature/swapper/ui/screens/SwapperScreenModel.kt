@@ -157,7 +157,6 @@ class SwapperScreenModel(
                 quoteTokenSymbol = dexPair.quoteToken?.symbol,
                 amount = quoteConfig.value.amount,
                 initialPrice = BigDecimal(dexPair.priceSol),
-                key = dexPair.key
             )
         }
     }

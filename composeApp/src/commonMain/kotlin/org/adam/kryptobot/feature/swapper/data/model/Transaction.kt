@@ -8,7 +8,7 @@ import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 import java.math.BigDecimal
 
 data class Transaction(
-    val quoteRaw: String,
+    val quoteRaw: String, //Used as a key and for further API calls
     val amount: Double, //effectively the inToken.amount but its what is typed in when first making the quote
     val initialDexPriceSol: BigDecimal,
     val inToken: TransactionToken,
@@ -33,17 +33,8 @@ data class Transaction(
         val outAmount = BigDecimal(quoteDto?.outAmount).movePointLeft(outToken.decimals)
 
         return when (swapMode) {
-            SwapMode.ExactIn -> outAmount / inAmount    
+            SwapMode.ExactIn -> outAmount / inAmount
             SwapMode.ExactOut -> inAmount / outAmount
         }
     }
-//    override fun equals(other: Any?): Boolean {
-//        if (this === other) return true
-//        if (other !is Transaction) return false
-//        return quoteRaw == other.quoteRaw
-//    }
-//
-//    override fun hashCode(): Int {
-//        return quoteRaw.hashCode()
-//    }
 }

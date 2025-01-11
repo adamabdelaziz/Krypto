@@ -34,14 +34,7 @@ interface SwapperRepository {
         currentConfig: QuoteParamsConfig
     ): QuoteParamsConfig
 
-    /*
-        @param key is the Pair Address
-     */
-    /*
-        TODO: Condense params here and just refer to values in the function
-     */
     suspend fun getQuote(
-        key: String,
         baseTokenAddress: String?,
         baseTokenSymbol: String?,
         quoteTokenAddress: String?,
@@ -54,12 +47,11 @@ interface SwapperRepository {
         TODO: Expose an "auto" parameter for later so that it immediately finishes the swap
          and not just gets the instructions and waits for UX
      */
-    suspend fun attemptSwap(quote: String, key: String)
+    suspend fun attemptSwap(quote: String)
     suspend fun attemptSwapInstructions()
 
-    suspend fun performSwapTransaction(quote: String, key: String)
+    suspend fun performSwapTransaction(quote: String)
 
-    //TODO change for support for multiple DEX pairs at once(key field in data object instead of maps)
     val quoteConfig: StateFlow<QuoteParamsConfig>
     val currentSwaps: StateFlow<List<Transaction>>  //Token address key and list of associated swaps done on it
 }
@@ -71,7 +63,7 @@ class SwapperRepositoryImpl(
     private val solanaApi: SolanaApi,
 ) : SwapperRepository {
 
-    private val _currentSwaps: MutableStateFlow< List<Transaction>> =
+    private val _currentSwaps: MutableStateFlow<List<Transaction>> =
         MutableStateFlow(listOf())
     override val currentSwaps: StateFlow<List<Transaction>> =
         _currentSwaps.stateIn(
@@ -113,7 +105,6 @@ class SwapperRepositoryImpl(
     }
 
     override suspend fun getQuote(
-        key: String,
         baseTokenAddress: String?,
         baseTokenSymbol: String?,
         quoteTokenAddress: String?,
@@ -193,7 +184,6 @@ class SwapperRepositoryImpl(
 
                 quoteRaw?.let {
                     createTransaction(
-                        key = key,
                         quote = it,
                         amount = amount,
                         quoteDto = quoteDto,
@@ -218,7 +208,6 @@ class SwapperRepositoryImpl(
     }
 
     private suspend fun createTransaction(
-        key: String,
         quote: String,
         amount: Double,
         quoteDto: JupiterQuoteDto?,
@@ -252,7 +241,7 @@ class SwapperRepositoryImpl(
         swapList.add(transaction)
         _currentSwaps.value = swapList.toList()
 
-        attemptSwap(quote, key)
+        attemptSwap(quote)
     }
 
     private fun updateTransaction(updatedTransaction: Transaction) {
@@ -292,7 +281,7 @@ class SwapperRepositoryImpl(
         TODO: Likely rename function since its not actually performing the swap just getting the instructions.
                 GET KEY FROM WALLET AND NOT CONSTANTS
      */
-    override suspend fun attemptSwap(quote: String, key: String) {
+    override suspend fun attemptSwap(quote: String) {
         val transaction = getTransaction(quote)
         withContext(Dispatchers.IO) {
             try {
@@ -304,9 +293,6 @@ class SwapperRepositoryImpl(
                     instructions?.let {
                         val updatedTransaction = tx.copy(swapResponse = it, transactionStep = TransactionStep.INSTRUCTIONS_MADE)
                         updateTransaction(updatedTransaction)
-                        //Logger.d("Instructions are $it")
-                        //val encoding = detectEncoding(it.swapTransaction)
-                        //Logger.d("Encoding is $encoding")
                     } ?: run {
                         Logger.d("Null instructions")
                     }
@@ -346,7 +332,7 @@ class SwapperRepositoryImpl(
         This is the one that works
         Similarly will need the specific quote and token address
      */
-    override suspend fun performSwapTransaction(quote: String, key: String) {
+    override suspend fun performSwapTransaction(quote: String) {
         val transactionStep = getTransaction(quote)
         transactionStep?.swapResponse?.let {
             withContext(Dispatchers.IO) {
