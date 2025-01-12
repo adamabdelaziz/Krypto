@@ -6,6 +6,7 @@ import org.adam.kryptobot.feature.swapper.enum.SwapMode
 data class QuoteParamsConfig(
 //    val inputAddress: String,
 //    val outputAddress: String,
+    val safeMode: Boolean = true, //Extra button to confirm quote or not.
     val amount: Double = 0.0, // Double
     val slippageBps: Int = 100, //Int 1% slippage (100 basis points)
     val swapMode: SwapMode = SwapMode.ExactIn,

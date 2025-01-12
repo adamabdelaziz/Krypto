@@ -14,6 +14,8 @@ import org.adam.kryptobot.feature.swapper.data.JupiterSwapApi
 import org.adam.kryptobot.feature.swapper.data.SolanaApi
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
+import org.adam.kryptobot.feature.swapper.data.model.SwapStrategy
+import org.adam.kryptobot.feature.swapper.data.model.TrackedTransaction
 import org.adam.kryptobot.feature.swapper.data.model.Transaction
 import org.adam.kryptobot.feature.swapper.data.model.TransactionToken
 import org.adam.kryptobot.feature.swapper.enum.Status
@@ -28,12 +30,14 @@ import kotlin.math.pow
 
 interface SwapperRepository {
     fun updateQuoteConfig(update: QuoteParamsConfig.() -> QuoteParamsConfig)
+    fun updateStrategy(baseTokenAddress: String, update: SwapStrategy.() -> SwapStrategy)
     fun updateDexSelection(
         dex: Dex,
         addToDexes: Boolean,
         currentConfig: QuoteParamsConfig
     ): QuoteParamsConfig
 
+    fun updateTrackedTransaction(updatedTransaction: TrackedTransaction)
     suspend fun getQuote(
         baseTokenAddress: String?,
         baseTokenSymbol: String?,
@@ -46,14 +50,17 @@ interface SwapperRepository {
     /*
         TODO: Expose an "auto" parameter for later so that it immediately finishes the swap
          and not just gets the instructions and waits for UX
+          May also be able to just pass around the transaction vs the quote and then having to get it each time?
      */
     suspend fun attemptSwap(quote: String)
     suspend fun attemptSwapInstructions()
 
-    suspend fun performSwapTransaction(quote: String)
+    suspend fun performSwapTransaction(quote: String, shouldTrack: Boolean)
 
     val quoteConfig: StateFlow<QuoteParamsConfig>
+    val swapStrategies: StateFlow<List<SwapStrategy>>
     val currentSwaps: StateFlow<List<Transaction>>  //Token address key and list of associated swaps done on it
+    val currentTrackedTransactions: StateFlow<List<TrackedTransaction>> // After Quote -> Instructions -> Swap occurs. Track it against dex price updates to determine profit
 }
 
 class SwapperRepositoryImpl(
@@ -63,8 +70,7 @@ class SwapperRepositoryImpl(
     private val solanaApi: SolanaApi,
 ) : SwapperRepository {
 
-    private val _currentSwaps: MutableStateFlow<List<Transaction>> =
-        MutableStateFlow(listOf())
+    private val _currentSwaps: MutableStateFlow<List<Transaction>> = MutableStateFlow(listOf())
     override val currentSwaps: StateFlow<List<Transaction>> =
         _currentSwaps.stateIn(
             scope = stateFlowScope,
@@ -72,9 +78,23 @@ class SwapperRepositoryImpl(
             started = SharingStarted.WhileSubscribed(5000),
         )
 
-    private val _quoteConfig: MutableStateFlow<QuoteParamsConfig> = MutableStateFlow(
-        QuoteParamsConfig()
-    )
+    private val _currentTrackedTransactions: MutableStateFlow<List<TrackedTransaction>> = MutableStateFlow(listOf())
+    override val currentTrackedTransactions: StateFlow<List<TrackedTransaction>> =
+        _currentTrackedTransactions.stateIn(
+            scope = stateFlowScope,
+            initialValue = _currentTrackedTransactions.value,
+            started = SharingStarted.WhileSubscribed(5000),
+        )
+
+    private val _swapStrategies: MutableStateFlow<List<SwapStrategy>> = MutableStateFlow(listOf())
+    override val swapStrategies: StateFlow<List<SwapStrategy>> =
+        _swapStrategies.stateIn(
+            scope = stateFlowScope,
+            initialValue = _swapStrategies.value,
+            started = SharingStarted.WhileSubscribed(5000),
+        )
+
+    private val _quoteConfig: MutableStateFlow<QuoteParamsConfig> = MutableStateFlow(QuoteParamsConfig())
     override val quoteConfig: StateFlow<QuoteParamsConfig> =
         _quoteConfig.stateIn(
             scope = stateFlowScope,
@@ -84,6 +104,24 @@ class SwapperRepositoryImpl(
 
     override fun updateQuoteConfig(update: QuoteParamsConfig.() -> QuoteParamsConfig) {
         _quoteConfig.value = _quoteConfig.value.update()
+    }
+
+    override fun updateStrategy(baseTokenAddress: String, update: SwapStrategy.() -> SwapStrategy) {
+        val list = _swapStrategies.value.toMutableList()
+        val updatedStrategyList = list.map {
+            if (it.key == baseTokenAddress) {
+                it.update()
+            } else {
+                it.copy()
+            }
+        }.toMutableList()
+
+        if (updatedStrategyList.none { it.key == baseTokenAddress }) {
+            updatedStrategyList.add(SwapStrategy(key = baseTokenAddress).update())
+        }
+
+        _swapStrategies.value = emptyList()
+        _swapStrategies.value = updatedStrategyList
     }
 
     override fun updateDexSelection(
@@ -236,7 +274,7 @@ class SwapperRepositoryImpl(
             initialDexPriceSol = initialPrice
         )
 
-        Logger.d("Determined price is ${transaction.initialPriceSol} dex price is $initialPrice")
+        Logger.d("Determined price is ${transaction.initialMonkasSol} dex price is $initialPrice")
 
         swapList.add(transaction)
         _currentSwaps.value = swapList.toList()
@@ -253,15 +291,28 @@ class SwapperRepositoryImpl(
 
         _currentSwaps.value = emptyList()
         _currentSwaps.value = updatedSwapList.toList()
-
-        val hasInTransaction = updatedTransaction.swapResponse != null
-        val hasInstructions = _currentSwaps.value.any { it.swapResponse != null }
-
-        Logger.d("hasInstructions: $hasInstructions, hasInTransaction: $hasInTransaction")
     }
 
     private fun getTransaction(quote: String): Transaction? {
         return _currentSwaps.value.firstOrNull { it.quoteRaw == quote }
+    }
+
+    override fun updateTrackedTransaction(updatedTransaction: TrackedTransaction) {
+        val trackedList = _currentTrackedTransactions.value.toMutableList()
+
+        val updatedList = trackedList.map {
+            if (it.transaction.outToken.address == updatedTransaction.transaction.outToken.address)
+                updatedTransaction
+            else
+                it.copy()
+        }.toMutableList()
+
+        _currentTrackedTransactions.value = emptyList()
+        _currentTrackedTransactions.value = updatedList.toList()
+    }
+
+    private fun getTrackedTransaction(baseTokenAddress: String): TrackedTransaction? {
+        return _currentTrackedTransactions.value.firstOrNull { it.transaction.outToken.address == baseTokenAddress }
     }
 
     private fun getTotalFees(quote: JupiterQuoteDto, inputDecimals: Int): BigDecimal {
@@ -277,7 +328,7 @@ class SwapperRepositoryImpl(
 
     /*
         This works as the step after quote
-        Will need to pass around quote and token address to ensure its referring to the correct quote in the List<TransactionStep>
+        Will need to pass around quote and token address to ensure its referring to the correct quote in the List<Transaction>
         TODO: Likely rename function since its not actually performing the swap just getting the instructions.
                 GET KEY FROM WALLET AND NOT CONSTANTS
      */
@@ -293,6 +344,9 @@ class SwapperRepositoryImpl(
                     instructions?.let {
                         val updatedTransaction = tx.copy(swapResponse = it, transactionStep = TransactionStep.INSTRUCTIONS_MADE)
                         updateTransaction(updatedTransaction)
+                        if (!_quoteConfig.value.safeMode) {
+                            performSwapTransaction(updatedTransaction.quoteRaw, true)
+                        }
                     } ?: run {
                         Logger.d("Null instructions")
                     }
@@ -332,9 +386,9 @@ class SwapperRepositoryImpl(
         This is the one that works
         Similarly will need the specific quote and token address
      */
-    override suspend fun performSwapTransaction(quote: String) {
-        val transactionStep = getTransaction(quote)
-        transactionStep?.swapResponse?.let {
+    override suspend fun performSwapTransaction(quote: String, shouldTrack: Boolean) {
+        val transaction = getTransaction(quote)
+        transaction?.swapResponse?.let {
             withContext(Dispatchers.IO) {
                 try {
                     val result = solanaApi.performSwapTransaction(
@@ -342,11 +396,22 @@ class SwapperRepositoryImpl(
                         instructions = it.swapTransaction
                     )
 
-                    val updatedStep = transactionStep.copy(
+                    val updatedTransaction = transaction.copy(
                         transactionSignature = result.getOrNull(),
                         status = if (result.isSuccess) Status.SUCCESS else Status.FAIL
                     )
-                    updateTransaction(updatedStep)
+                    updateTransaction(updatedTransaction)
+
+                    if (shouldTrack) {
+                        val trackedTransaction = TrackedTransaction(
+                            transaction = updatedTransaction,
+                            highestObservedPriceSol = updatedTransaction.initialDexPriceSol,
+                            isCompleted = false,
+                        )
+                        val list = _currentTrackedTransactions.value.toMutableList()
+                        list.add(trackedTransaction)
+                        _currentTrackedTransactions.value = list.toList()
+                    }
                 } catch (e: Exception) {
                     Logger.d("Exception performing swap transaction ${e.message}")
                     e.printStackTrace()
@@ -357,5 +422,26 @@ class SwapperRepositoryImpl(
         }
     }
 
+    private fun determineSwapAmount(transaction: Transaction, currentPrice: BigDecimal, strategy: SwapStrategy): BigDecimal {
+        val totalTokens = BigDecimal(transaction.amount)
+
+        return when (strategy.exitStrategy) {
+            SwapStrategy.ExitStrategy.SWAP_ALL -> totalTokens
+
+            SwapStrategy.ExitStrategy.SWAP_PARTIAL -> {
+                val percentage = strategy.exitPct ?: BigDecimal(100)
+                totalTokens * (percentage / BigDecimal(100))
+            }
+
+            SwapStrategy.ExitStrategy.BREAK_EVEN -> {
+                val initialSolSpent = transaction.initialDexPriceSol * totalTokens
+                if (currentPrice * totalTokens >= initialSolSpent) {
+                    initialSolSpent / currentPrice
+                } else {
+                    BigDecimal.ZERO
+                }
+            }
+        }
+    }
 
 }

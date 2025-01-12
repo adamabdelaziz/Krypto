@@ -76,7 +76,27 @@ fun InputTextField(
         label = { TextFieldLabel(text = label) },
         isError = isError,
     )
+}
 
+@Composable
+fun InputTextFieldImproved(
+    modifier: Modifier = Modifier,
+    text: String,
+    onTextChanged: (String) -> Unit,
+    label: String = "Enter Text",
+    isError: Boolean = false,
+) {
+    OutlinedTextField(
+        modifier = modifier,
+        colors = AppOutlinedTextFieldColors,
+        shape = CurrentShapes.pill,
+        value = text,
+        onValueChange = {
+            onTextChanged(it)
+        },
+        label = { TextFieldLabel(text = label) },
+        isError = isError,
+    )
 }
 
 @Composable
@@ -88,24 +108,19 @@ fun ValidatedTextField(
     isError: Boolean = false,
     validate: (String) -> Boolean = { it.toIntOrNull() != null || it.isEmpty() }
 ) {
-    val textFieldState = remember { mutableStateOf(TextFieldValue(text)) }
-
     OutlinedTextField(
         modifier = modifier,
         colors = AppOutlinedTextFieldColors,
         shape = CurrentShapes.pill,
-        value = textFieldState.value,
-        onValueChange = {
-            val updatedText = it.text
+        value = text,
+        onValueChange = { updatedText ->
             if (validate(updatedText)) {
-                textFieldState.value = it
                 onTextChanged(updatedText)
             }
         },
         label = { TextFieldLabel(text = label) },
         isError = isError,
     )
-
 }
 
 @Composable

@@ -7,6 +7,7 @@ import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 
 data class TransactionUiModel(
+    val key:String, //QuoteRaw
     val amount: String,
     val initialPriceSol: String,
     val percentChange: String,

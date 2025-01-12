@@ -11,6 +11,7 @@ fun Transaction.toTransactionUiModel(livePrice: BigDecimal): TransactionUiModel 
     val percentChange = calculatePercentChange(this.initialDexPriceSol, livePrice)
 
     return TransactionUiModel(
+        key = this.quoteRaw,
         amount = this.amount.formatToDecimalString(),
         swapMode = this.swapMode,
         inToken = this.inToken.toUi(),

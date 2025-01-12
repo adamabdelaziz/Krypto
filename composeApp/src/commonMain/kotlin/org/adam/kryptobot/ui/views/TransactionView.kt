@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.ArrowRight
+import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 import org.adam.kryptobot.feature.swapper.ui.model.TransactionUiModel
 import org.adam.kryptobot.ui.components.BasicButton
 import org.adam.kryptobot.ui.components.BasicCard
@@ -106,7 +107,8 @@ fun TransactionView(modifier: Modifier, transaction: TransactionUiModel, onClick
                 BasicButton(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     text = "Swap",
-                    onClick = onClick
+                    onClick = onClick,
+                    enabled = transaction.transactionStep != TransactionStep.TRANSACTION_PERFORMED
                 )
             }
         }

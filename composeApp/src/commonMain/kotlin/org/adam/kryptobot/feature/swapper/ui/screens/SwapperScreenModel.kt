@@ -2,25 +2,27 @@ package org.adam.kryptobot.feature.swapper.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.navigator.lifecycle.NavigatorDisposable
 import co.touchlab.kermit.Logger
 import com.zhuinden.flowcombinetuplekt.combineStates
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.adam.kryptobot.feature.scanner.data.mappers.toDexPairSwapUiModel
 import org.adam.kryptobot.feature.scanner.repository.ScannerRepository
 import org.adam.kryptobot.feature.scanner.usecase.MonitorTokenAddressesUseCase
+import org.adam.kryptobot.feature.swapper.data.model.SwapStrategy
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
+import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 import org.adam.kryptobot.feature.swapper.repository.SwapperRepository
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 import org.adam.kryptobot.feature.wallet.repository.WalletRepository
 import java.math.BigDecimal
-import javax.swing.plaf.nimbus.State
 
 class SwapperScreenModel(
     private val swapperRepository: SwapperRepository,
@@ -48,10 +50,36 @@ class SwapperScreenModel(
         latestDexPairs,
         trackedTokenAddresses,
         selectedDexPair,
+        swapStrategies,
         quoteConfig,
         currentSwaps,
         ::mapSwapScreenUiState
     )
+
+    /*
+        TODO make this a use case and call in onScreenEnter
+     */
+    val profiteer = latestDexPairs.onEach {
+        currentTrackedTransactions.value.onEach { trans ->
+            val dexPair = it.firstOrNull { pair -> pair.baseToken?.address == trans.transaction.outToken.address }
+            val strategy = swapStrategies.value.firstOrNull { strategy -> strategy.key == trans.transaction.outToken.address }
+
+            dexPair?.priceNative?.toBigDecimal()?.let { price ->
+                updateTrackedTransaction(trans.updatePrice(price))
+
+                strategy?.let { strat ->
+                    if (trans.shouldExit(currentPrice = price, strategy = strat)) {
+                        /*
+                            Create quote here that auto swaps and does not get tracked
+                         */
+                    }
+
+                }
+            }
+
+
+        }
+    }.launchIn(screenModelScope)
 
     fun onScreenEnter() {
         monitorTokenAddressesUseCase(null, MonitorTokenAddressesUseCase.SWAP_SCAN_DELAY)
@@ -61,6 +89,20 @@ class SwapperScreenModel(
         when (event) {
             is SwapperScreenEvent.OnDexPairClicked -> {
                 _selectedDexKey.value = event.dexPair.key
+            }
+
+            is SwapperScreenEvent.OnTransactionClicked -> {
+                when (event.transaction.transactionStep) {
+                    TransactionStep.INSTRUCTIONS_MADE -> {
+                        screenModelScope.launch {
+                            performSwapTransaction(event.transaction.key, true)
+                        }
+                    }
+
+                    else -> {
+
+                    }
+                }
             }
 
             is SwapperScreenEvent.OnGetQuoteClicked -> {
@@ -94,6 +136,10 @@ class SwapperScreenModel(
                 updateQuoteConfig { copy(swapMode = newSwapMode) }
             }
 
+            is SwapperScreenEvent.UpdateSafeMode -> {
+                val newSafeMode = !quoteConfig.value.safeMode
+                updateQuoteConfig { copy(safeMode = newSafeMode) }
+            }
 
             is SwapperScreenEvent.UpdateDexes -> {
                 val newConfig = updateDexSelection(
@@ -143,6 +189,43 @@ class SwapperScreenModel(
 
             is SwapperScreenEvent.UpdateAutoSlippageCollisionUsdValue -> {
                 updateQuoteConfig { copy(autoSlippageCollisionUsdValue = event.value) }
+            }
+
+            /*
+                Not actually used ATM
+             */
+            is SwapperScreenEvent.UpdateExitPercent -> {
+                selectedDexPair.value?.baseToken?.address?.let {
+                    updateStrategy(it) {
+                        copy(exitPct = event.exitPercentage)
+                    }
+                }
+            }
+
+            is SwapperScreenEvent.UpdateProfitTargetPercent -> {
+                selectedDexPair.value?.baseToken?.address?.let { address ->
+                    event.profitTarget?.let {
+                        updateStrategy(address) {
+                            copy(profitTargetPct = event.profitTarget)
+                        }
+                    }
+                }
+            }
+
+            is SwapperScreenEvent.UpdateStopLossPercent -> {
+                selectedDexPair.value?.baseToken?.address?.let {
+                    updateStrategy(it) {
+                        copy(stopLossPct = event.stopLoss)
+                    }
+                }
+            }
+
+            is SwapperScreenEvent.UpdateTrailingStopPercent -> {
+                selectedDexPair.value?.baseToken?.address?.let {
+                    updateStrategy(it) {
+                        copy(trailingStopPct = event.trailingStop)
+                    }
+                }
             }
         }
     }

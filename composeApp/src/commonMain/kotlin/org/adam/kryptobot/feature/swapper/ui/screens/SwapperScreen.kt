@@ -12,18 +12,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinNavigatorScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import co.touchlab.kermit.Logger
 import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
 import org.adam.kryptobot.ui.components.BasicButton
@@ -31,13 +27,16 @@ import org.adam.kryptobot.ui.components.BasicCheckbox
 import org.adam.kryptobot.ui.components.BasicText
 import org.adam.kryptobot.ui.components.BasicCard
 import org.adam.kryptobot.ui.components.CenteredRow
-import org.adam.kryptobot.ui.components.InputTextField
 import org.adam.kryptobot.ui.components.ValidatedTextField
 import org.adam.kryptobot.ui.views.PairSwapCard
 import org.adam.kryptobot.ui.theme.CurrentColors
 import org.adam.kryptobot.ui.views.TransactionView
 import org.adam.kryptobot.util.HandleScreenEnter
 import org.adam.kryptobot.util.toStringOrEmpty
+import androidx.compose.runtime.key
+import org.adam.kryptobot.ui.components.InputTextField
+import org.adam.kryptobot.ui.components.InputTextFieldImproved
+import org.hipparchus.analysis.function.Log
 
 class SwapperScreen : Screen {
 
@@ -88,6 +87,12 @@ class SwapperScreen : Screen {
                             label = "Enter Slippage",
                             isError = state.quoteParams.slippageBps == 0,
                             validate = { it.toIntOrNull() != null }
+                        )
+                        BasicCheckbox(
+                            text = "Safe Mode",
+                            isChecked = state.quoteParams.safeMode,
+                            onCheckedChange = { onEvent(SwapperScreenEvent.UpdateSafeMode) },
+                            modifier = Modifier.padding(end = 8.dp)
                         )
                         BasicText(
                             modifier = Modifier.padding(horizontal = 8.dp),
@@ -178,36 +183,57 @@ class SwapperScreen : Screen {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         CenteredRow(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                             ValidatedTextField(
-                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                                 text = state.quoteParams.platformFeeBps.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdatePlatformFeeBps(it.toIntOrNull())) },
                                 label = "Platform Fee Bps",
-
-                                )
+                            )
                             ValidatedTextField(
-                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                                 text = state.quoteParams.maxAccounts.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAccounts(it.toIntOrNull())) },
                                 label = "Max Accounts",
-
-                                )
-                        }
-
-                        CenteredRow(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                            )
                             ValidatedTextField(
-                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                                 text = state.quoteParams.maxAutoSlippageBps.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdateMaxAutoSlippageBps(it.toIntOrNull())) },
                                 label = "Max Auto Slippage Bps",
-
-                                )
+                            )
                             ValidatedTextField(
-                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                                 text = state.quoteParams.autoSlippageCollisionUsdValue.toStringOrEmpty(),
                                 onTextChanged = { onEvent(SwapperScreenEvent.UpdateAutoSlippageCollisionUsdValue(it.toIntOrNull())) },
                                 label = "Auto Slippage Collision USD Value",
+                            )
+                        }
+                    }
+                }
 
-                                )
+                BasicCard {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        CenteredRow(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                            ValidatedTextField(
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
+                                text = state.selectedStrategy?.profitTargetPct.toStringOrEmpty(),
+                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateProfitTargetPercent(it.toBigDecimalOrNull())) },
+                                validate = { it.toBigDecimalOrNull() != null },
+                                label = "Profit Target %",
+                            )
+                            ValidatedTextField(
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
+                                text = state.selectedStrategy?.trailingStopPct.toStringOrEmpty(),
+                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateTrailingStopPercent(it.toBigDecimalOrNull())) },
+                                label = "Trailing Stop %",
+                                validate = { it.toBigDecimalOrNull() != null || it.isEmpty() }
+                            )
+                            ValidatedTextField(
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 4.dp),
+                                text = state.selectedStrategy?.stopLossPct.toStringOrEmpty(),
+                                onTextChanged = { onEvent(SwapperScreenEvent.UpdateStopLossPercent(it.toBigDecimalOrNull())) },
+                                validate = { it.toBigDecimalOrNull() != null || it.isEmpty() },
+                                label = "Stop Loss %",
+                            )
                         }
                     }
                 }
@@ -224,14 +250,17 @@ class SwapperScreen : Screen {
                     /*
                     TransactionStep UI here
                      */
-                    items(state.selectedTransactionSteps) { item ->
-                        TransactionView(modifier = Modifier.padding(vertical = 2.dp), transaction = item, onClick = {})
+                    items(state.selectedTransactions) { item ->
+                        TransactionView(
+                            modifier = Modifier.padding(vertical = 2.dp),
+                            transaction = item,
+                            onClick = { onEvent(SwapperScreenEvent.OnTransactionClicked(item)) })
                     }
                 }
-
             }
 
-        }
-    }
 
+        }
+
+    }
 }

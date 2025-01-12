@@ -25,7 +25,7 @@ data class Transaction(
         TODO: See if this is useful. Seems like initialDexPriceSol is the price in terms of the token in SOL
             so that should be good enough for tracking for profit
      */
-    val initialPriceSol
+    val initialMonkasSol
         get() = determineInitialPriceSol()
 
     private fun determineInitialPriceSol(): BigDecimal {
