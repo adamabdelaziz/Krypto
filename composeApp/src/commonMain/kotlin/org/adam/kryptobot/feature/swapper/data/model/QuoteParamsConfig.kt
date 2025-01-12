@@ -2,12 +2,13 @@ package org.adam.kryptobot.feature.swapper.data.model
 
 import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.swapper.enum.SwapMode
+import java.math.BigDecimal
 
 data class QuoteParamsConfig(
 //    val inputAddress: String,
 //    val outputAddress: String,
     val safeMode: Boolean = true, //Extra button to confirm quote or not.
-    val amount: Double = 0.0, // Double
+    val amount: BigDecimal = BigDecimal.ZERO, // Double
     val slippageBps: Int = 100, //Int 1% slippage (100 basis points)
     val swapMode: SwapMode = SwapMode.ExactIn,
     val dexes: Set<Dex> = setOf(),

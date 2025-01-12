@@ -172,7 +172,6 @@ class ScannerRepositoryImpl(
                 }.distinct().joinToString(",")
 
                 if (addresses.isNotEmpty()) {
-                    Logger.d("Tracked size is ${_trackedTokenAddresses.value.size}")
                     val response = api.getPairsByTokenAddress(addresses)
 
                     response?.let {
@@ -201,7 +200,7 @@ class ScannerRepositoryImpl(
                                 // Logger.d("${pair.chainId} ${pair.dexId} ${pair.pairAddress} | ${pair.baseToken?.address} ${pair.baseToken?.symbol} | ${pair.quoteToken?.address} ${pair.quoteToken?.symbol}")
                             }
                         }
-                        Logger.d("DEx Size is ${oldList.size}")
+                       // Logger.d("DEx Size is ${oldList.size}")
 
                         _latestDexPairs.value =
                             oldList.toList().distinctBy { it.pairAddress }

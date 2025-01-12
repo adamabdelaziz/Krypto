@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import compose.icons.FeatherIcons
 import compose.icons.feathericons.ArrowRight
+import org.adam.kryptobot.feature.swapper.enum.Status
 import org.adam.kryptobot.feature.swapper.enum.TransactionStep
 import org.adam.kryptobot.feature.swapper.ui.model.TransactionUiModel
 import org.adam.kryptobot.ui.components.BasicButton
@@ -104,12 +105,21 @@ fun TransactionView(modifier: Modifier, transaction: TransactionUiModel, onClick
             }
 
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                BasicButton(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                    text = "Swap",
-                    onClick = onClick,
-                    enabled = transaction.transactionStep != TransactionStep.TRANSACTION_PERFORMED
-                )
+                if (transaction.beingTrackedForProfit) {
+                    BasicText(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        text = if (transaction.status == Status.SUCCESS) "Waiting for profit" else if (transaction.status == Status.FAIL) "Failed Transaction" else "Nani",
+                        color = CurrentColors.onSurface,
+                    )
+                } else {
+                    BasicButton(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        text = "Swap",
+                        onClick = onClick,
+                        enabled = transaction.transactionStep != TransactionStep.TRANSACTION_PERFORMED
+                    )
+                }
+
             }
         }
 

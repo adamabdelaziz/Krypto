@@ -7,7 +7,7 @@ import org.adam.kryptobot.util.calculatePercentChange
 import org.adam.kryptobot.util.formatToDecimalString
 import java.math.BigDecimal
 
-fun Transaction.toTransactionUiModel(livePrice: BigDecimal): TransactionUiModel {
+fun Transaction.toTransactionUiModel(livePrice: BigDecimal, beingTracked: Boolean): TransactionUiModel {
     val percentChange = calculatePercentChange(this.initialDexPriceSol, livePrice)
 
     return TransactionUiModel(
@@ -21,6 +21,8 @@ fun Transaction.toTransactionUiModel(livePrice: BigDecimal): TransactionUiModel 
         fees = this.fee.formatToDecimalString(),
         initialPriceSol = this.initialDexPriceSol.formatToDecimalString(),
         percentChange = percentChange.toString(),
+        beingTrackedForProfit = beingTracked,
+        status = this.status,
     )
 }
 

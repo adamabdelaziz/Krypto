@@ -42,7 +42,7 @@ interface SolanaApi {
         privateKey: String,
         instructions: String,
         rpcUrl: RpcUrl = RpcUrl.MAINNNET,
-        commitment: Commitment = Commitment.FINALIZED,
+        commitment: Commitment = Commitment.CONFIRMED,
     ): Result<String>
 
     fun getMintDecimalsAmount(address: String): Int
@@ -72,7 +72,7 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         val connection = Connection(rpcUrl, commitment)
         val key = PublicKey(walletKey)
         val balance = connection.getBalance(key)
-        Logger.d("Balance is $balance")
+        //Logger.d("Balance is $balance")
         return balance
     }
 
@@ -87,10 +87,10 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
     ): Result<String> {
         val solanaClient = Connection(rpcUrl, commitment)
 
-        val balance = getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
-        Logger.d("Balance is $balance")
+//        val balance = getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
+//        Logger.d("Balance is $balance")
 
-        val hash = solanaClient.getLatestBlockhashExtended(commitment).blockhash
+        val hash = solanaClient.getLatestBlockhash(commitment)
         val valid = solanaClient.isBlockhashValid(hash, commitment)
         Logger.d("Hash valid: $valid")
 

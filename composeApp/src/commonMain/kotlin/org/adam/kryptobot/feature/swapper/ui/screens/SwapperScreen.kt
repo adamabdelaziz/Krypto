@@ -37,6 +37,7 @@ import androidx.compose.runtime.key
 import org.adam.kryptobot.ui.components.InputTextField
 import org.adam.kryptobot.ui.components.InputTextFieldImproved
 import org.hipparchus.analysis.function.Log
+import java.math.BigDecimal
 
 class SwapperScreen : Screen {
 
@@ -75,10 +76,10 @@ class SwapperScreen : Screen {
                         ValidatedTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             text = state.quoteParams.amount.toStringOrEmpty(),
-                            onTextChanged = { onEvent(SwapperScreenEvent.UpdateAmount(it.toDoubleOrNull() ?: 0.0)) },
+                            onTextChanged = { onEvent(SwapperScreenEvent.UpdateAmount(it.toBigDecimalOrNull() ?: BigDecimal.ZERO)) },
                             label = "Enter Amount",
-                            isError = state.quoteParams.amount == 0.0,
-                            validate = { it.toDoubleOrNull() != null }
+                            isError = state.quoteParams.amount == BigDecimal.ZERO,
+                            validate = { it.toBigDecimalOrNull() != null }
                         )
                         ValidatedTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -240,7 +241,7 @@ class SwapperScreen : Screen {
                 BasicCard {
                     CenteredRow(modifier = Modifier.padding(8.dp), horizontalArrangement = Arrangement.Center) {
                         BasicButton(
-                            enabled = state.quoteParams.amount > 0.0 && state.selectedPair != null,
+                            enabled = state.quoteParams.amount > BigDecimal.ZERO && state.selectedPair != null,
                             text = "Get Quote",
                             onClick = { onEvent(SwapperScreenEvent.OnGetQuoteClicked) },
                         )

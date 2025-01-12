@@ -25,6 +25,7 @@ import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
 import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 import org.adam.kryptobot.util.getSwapTokenAddresses
+import org.hipparchus.analysis.function.Log
 import java.math.BigDecimal
 import kotlin.math.pow
 
@@ -45,6 +46,8 @@ interface SwapperRepository {
         quoteTokenSymbol: String?,
         amount: Double,
         initialPrice: BigDecimal, // this refers to the SOL price of the token you're buying so you know when to swap back for profit
+        swapMode: SwapMode = quoteConfig.value.swapMode,
+        shouldTrack: Boolean = true,
     )
 
     /*
@@ -52,10 +55,12 @@ interface SwapperRepository {
          and not just gets the instructions and waits for UX
           May also be able to just pass around the transaction vs the quote and then having to get it each time?
      */
-    suspend fun attemptSwap(quote: String)
+    suspend fun attemptSwap(quote: String, shouldTrack: Boolean = true)
     suspend fun attemptSwapInstructions()
 
-    suspend fun performSwapTransaction(quote: String, shouldTrack: Boolean)
+    suspend fun performSwapTransaction(quote: String, shouldTrack: Boolean = true)
+
+    fun determineSwapAmount(transaction: Transaction, currentPrice: BigDecimal, strategy: SwapStrategy): String
 
     val quoteConfig: StateFlow<QuoteParamsConfig>
     val swapStrategies: StateFlow<List<SwapStrategy>>
@@ -149,6 +154,8 @@ class SwapperRepositoryImpl(
         quoteTokenSymbol: String?,
         amount: Double,
         initialPrice: BigDecimal,
+        swapMode: SwapMode,
+        shouldTrack: Boolean,
     ) {
         if (baseTokenAddress == null || quoteTokenAddress == null) return
 
@@ -163,20 +170,23 @@ class SwapperRepositoryImpl(
             baseTokenAddress = baseTokenSymbol ?: "",
             quoteTokenAddress = quoteTokenSymbol ?: ""
         )
+        Logger.d("In is $inputSymbol out is $outputSymbol amount is $amount")
+        Logger.d("In is $inputAddress out is $outputAddress")
 
         withContext(Dispatchers.IO) {
             try {
                 val decimals = solanaApi.getMintDecimalsAmount(inputAddress)
                 val outDecimals = solanaApi.getMintDecimalsAmount(outputAddress)
-
-                Logger.d("Decimals for quote input $decimals for output $outDecimals")
+                val amountToUse = formatTokenAmountForQuote(amount, decimals)
+                Logger.d("Amount is $amount amountToUse is $amountToUse")
+                Logger.d("Decimals for quote input $decimals for output $outDecimals $amountToUse")
 
                 val (quoteRaw, quoteDto) = swapApi.getQuote(
                     inputAddress = inputAddress,
                     outputAddress = outputAddress,
-                    amount = formatTokenAmountForQuote(amount, decimals),
+                    amount = amountToUse,
                     slippageBps = _quoteConfig.value.slippageBps,
-                    swapMode = _quoteConfig.value.swapMode.name,
+                    swapMode = swapMode.name,
                     dexes = _quoteConfig.value.dexes.map { it.name },
                     excludeDexes = _quoteConfig.value.excludeDexes.map { it.name },
                     restrictIntermediateTokens = _quoteConfig.value.restrictIntermediateTokens,
@@ -189,20 +199,29 @@ class SwapperRepositoryImpl(
                     autoSlippageCollisionUsdValue = _quoteConfig.value.autoSlippageCollisionUsdValue
                 )
 
-                quoteDto?.routePlan?.forEach {
-                    Logger.d("${it.swapInfo.feeMint} : ${it.swapInfo.feeAmount} : ${it.swapInfo.ammKey} : ${it.swapInfo.label}}")
+                if (quoteRaw == null) {
+                    Logger.d("Quote Raw null")
+                    return@withContext
+                }
+                if (quoteDto == null) {
+                    Logger.d("Quote DTO null")
+                    return@withContext
                 }
 
-                Logger.d("Raw amounts In: ${quoteDto?.inAmount} Out: ${quoteDto?.outAmount}")
+//                quoteDto.routePlan.forEach {
+//                    Logger.d("${it.swapInfo.feeMint} : ${it.swapInfo.feeAmount} : ${it.swapInfo.ammKey} : ${it.swapInfo.label}}")
+//                }
 
-                val readableIn = adjustTokenAmount(quoteDto?.inAmount ?: "0", decimals)
-                val readableOut = adjustTokenAmount(quoteDto?.outAmount ?: "0", outDecimals)
+                Logger.d("Raw amounts In: ${quoteDto.inAmount} Out: ${quoteDto.outAmount}")
+
+                val readableIn = adjustTokenAmount(quoteDto.inAmount, decimals)
+                val readableOut = adjustTokenAmount(quoteDto.outAmount, outDecimals)
 
                 Logger.d("Human readable attempt in: $readableIn")
                 Logger.d("Human readable attempt out: $readableOut")
 
-                Logger.d("In mint ${quoteDto?.inputMint} is Solana ${quoteDto?.inputMint == SOLANA_MINT_ADDRESS}")
-                Logger.d("Out mint ${quoteDto?.outputMint} is Solana ${quoteDto?.outputMint == SOLANA_MINT_ADDRESS}")
+                Logger.d("In mint ${quoteDto.inputMint} is Solana ${quoteDto.inputMint == SOLANA_MINT_ADDRESS}")
+                Logger.d("Out mint ${quoteDto.outputMint} is Solana ${quoteDto.outputMint == SOLANA_MINT_ADDRESS}")
 
                 val inputToken = TransactionToken(
                     symbol = inputSymbol,
@@ -220,17 +239,16 @@ class SwapperRepositoryImpl(
                     decimals = outDecimals
                 )
 
-                quoteRaw?.let {
-                    createTransaction(
-                        quote = it,
-                        amount = amount,
-                        quoteDto = quoteDto,
-                        inputToken = inputToken,
-                        outputToken = outputToken,
-                        swapMode = _quoteConfig.value.swapMode,
-                        initialPrice = initialPrice
-                    )
-                }
+                createTransaction(
+                    quote = quoteRaw,
+                    amount = amount,
+                    quoteDto = quoteDto,
+                    inputToken = inputToken,
+                    outputToken = outputToken,
+                    swapMode = _quoteConfig.value.swapMode,
+                    initialPrice = initialPrice,
+                    shouldTrack = shouldTrack,
+                )
             } catch (e: Exception) {
                 Logger.d("Exception getting Quote ${e.message}")
             }
@@ -253,6 +271,7 @@ class SwapperRepositoryImpl(
         outputToken: TransactionToken,
         swapMode: SwapMode,
         initialPrice: BigDecimal,
+        shouldTrack: Boolean,
     ) {
         val swapList = _currentSwaps.value.toMutableList()
 
@@ -279,7 +298,7 @@ class SwapperRepositoryImpl(
         swapList.add(transaction)
         _currentSwaps.value = swapList.toList()
 
-        attemptSwap(quote)
+        attemptSwap(quote, shouldTrack)
     }
 
     private fun updateTransaction(updatedTransaction: Transaction) {
@@ -297,6 +316,9 @@ class SwapperRepositoryImpl(
         return _currentSwaps.value.firstOrNull { it.quoteRaw == quote }
     }
 
+    /*
+        TODO: May need to be the quoteRaw still and not the outToken address in the event of multiple transactions on the same token
+     */
     override fun updateTrackedTransaction(updatedTransaction: TrackedTransaction) {
         val trackedList = _currentTrackedTransactions.value.toMutableList()
 
@@ -332,8 +354,9 @@ class SwapperRepositoryImpl(
         TODO: Likely rename function since its not actually performing the swap just getting the instructions.
                 GET KEY FROM WALLET AND NOT CONSTANTS
      */
-    override suspend fun attemptSwap(quote: String) {
+    override suspend fun attemptSwap(quote: String, shouldTrack: Boolean) {
         val transaction = getTransaction(quote)
+
         withContext(Dispatchers.IO) {
             try {
                 transaction?.let { tx ->
@@ -344,8 +367,8 @@ class SwapperRepositoryImpl(
                     instructions?.let {
                         val updatedTransaction = tx.copy(swapResponse = it, transactionStep = TransactionStep.INSTRUCTIONS_MADE)
                         updateTransaction(updatedTransaction)
-                        if (!_quoteConfig.value.safeMode) {
-                            performSwapTransaction(updatedTransaction.quoteRaw, true)
+                        if (!_quoteConfig.value.safeMode || !shouldTrack) {
+                            performSwapTransaction(updatedTransaction.quoteRaw, shouldTrack)
                         }
                     } ?: run {
                         Logger.d("Null instructions")
@@ -388,6 +411,7 @@ class SwapperRepositoryImpl(
      */
     override suspend fun performSwapTransaction(quote: String, shouldTrack: Boolean) {
         val transaction = getTransaction(quote)
+
         transaction?.swapResponse?.let {
             withContext(Dispatchers.IO) {
                 try {
@@ -398,7 +422,8 @@ class SwapperRepositoryImpl(
 
                     val updatedTransaction = transaction.copy(
                         transactionSignature = result.getOrNull(),
-                        status = if (result.isSuccess) Status.SUCCESS else Status.FAIL
+                        status = if (result.isSuccess) Status.SUCCESS else Status.FAIL,
+                        transactionStep = TransactionStep.TRANSACTION_PERFORMED,
                     )
                     updateTransaction(updatedTransaction)
 
@@ -411,6 +436,15 @@ class SwapperRepositoryImpl(
                         val list = _currentTrackedTransactions.value.toMutableList()
                         list.add(trackedTransaction)
                         _currentTrackedTransactions.value = list.toList()
+                    } else {
+                        /*
+                             Some logic that links back to the original transaction that its completed?
+                         */
+                        val initialTransaction = getTrackedTransaction(transaction.inToken.address)
+                        initialTransaction?.let {
+                            Logger.d("Marking initial transaction as completed ${it.highestObservedPriceSol}")
+                            updateTrackedTransaction(it.markAsCompleted())
+                        }
                     }
                 } catch (e: Exception) {
                     Logger.d("Exception performing swap transaction ${e.message}")
@@ -422,23 +456,23 @@ class SwapperRepositoryImpl(
         }
     }
 
-    private fun determineSwapAmount(transaction: Transaction, currentPrice: BigDecimal, strategy: SwapStrategy): BigDecimal {
-        val totalTokens = BigDecimal(transaction.amount)
+    override fun determineSwapAmount(transaction: Transaction, currentPrice: BigDecimal, strategy: SwapStrategy): String {
+        val totalTokens = transaction.outToken.amount
 
         return when (strategy.exitStrategy) {
-            SwapStrategy.ExitStrategy.SWAP_ALL -> totalTokens
+            SwapStrategy.ExitStrategy.SWAP_ALL -> totalTokens.toPlainString() // Convert to string
 
             SwapStrategy.ExitStrategy.SWAP_PARTIAL -> {
                 val percentage = strategy.exitPct ?: BigDecimal(100)
-                totalTokens * (percentage / BigDecimal(100))
+                (totalTokens * (percentage / BigDecimal(100))).toPlainString() // Convert to string
             }
 
             SwapStrategy.ExitStrategy.BREAK_EVEN -> {
                 val initialSolSpent = transaction.initialDexPriceSol * totalTokens
                 if (currentPrice * totalTokens >= initialSolSpent) {
-                    initialSolSpent / currentPrice
+                    (initialSolSpent / currentPrice).toPlainString() // Convert to string
                 } else {
-                    BigDecimal.ZERO
+                    BigDecimal.ZERO.toPlainString() // Return zero as string
                 }
             }
         }

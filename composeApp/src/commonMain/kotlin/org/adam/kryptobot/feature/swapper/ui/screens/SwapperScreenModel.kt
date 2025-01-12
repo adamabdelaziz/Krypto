@@ -53,6 +53,7 @@ class SwapperScreenModel(
         swapStrategies,
         quoteConfig,
         currentSwaps,
+        currentTrackedTransactions,
         ::mapSwapScreenUiState
     )
 
@@ -72,12 +73,28 @@ class SwapperScreenModel(
                         /*
                             Create quote here that auto swaps and does not get tracked
                          */
-                    }
 
+                        val amount = determineSwapAmount(
+                            transaction = trans.transaction,
+                            currentPrice = price,
+                            strategy = strat
+                        )
+
+                        Logger.d("Should exit at $price amount $amount for ${trans.transaction.outToken.symbol}")
+
+                        getQuote(
+                            baseTokenAddress = dexPair.quoteToken?.address,
+                            baseTokenSymbol = dexPair.quoteToken?.symbol,
+                            quoteTokenAddress = dexPair.baseToken?.address,
+                            quoteTokenSymbol = dexPair.baseToken?.symbol,
+                            amount = amount.toDouble(),
+                            initialPrice = price,
+                            swapMode = SwapMode.ExactIn,
+                            shouldTrack = false,
+                        )
+                    }
                 }
             }
-
-
         }
     }.launchIn(screenModelScope)
 
@@ -238,7 +255,7 @@ class SwapperScreenModel(
                 baseTokenSymbol = dexPair.baseToken?.symbol,
                 quoteTokenAddress = dexPair.quoteToken?.address,
                 quoteTokenSymbol = dexPair.quoteToken?.symbol,
-                amount = quoteConfig.value.amount,
+                amount = quoteConfig.value.amount.toDouble(),
                 initialPrice = BigDecimal(dexPair.priceSol),
             )
         }

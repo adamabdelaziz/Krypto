@@ -10,7 +10,7 @@ sealed class SwapperScreenEvent {
     data class OnTransactionClicked(val transaction: TransactionUiModel): SwapperScreenEvent()
     data object OnGetQuoteClicked : SwapperScreenEvent()
 
-    data class UpdateAmount(val amount: Double?) : SwapperScreenEvent()
+    data class UpdateAmount(val amount: BigDecimal?) : SwapperScreenEvent()
     data class UpdateSlippageBps(val slippageBps: Int?) : SwapperScreenEvent()
     data object UpdateSwapMode : SwapperScreenEvent()
     data object UpdateSafeMode : SwapperScreenEvent()

@@ -7,6 +7,7 @@ import org.adam.kryptobot.feature.scanner.enum.Chain
 import org.adam.kryptobot.feature.swapper.data.mappers.toTransactionUiModel
 import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
 import org.adam.kryptobot.feature.swapper.data.model.SwapStrategy
+import org.adam.kryptobot.feature.swapper.data.model.TrackedTransaction
 import org.adam.kryptobot.feature.swapper.data.model.Transaction
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 import org.adam.kryptobot.feature.swapper.ui.model.TransactionUiModel
@@ -28,8 +29,10 @@ fun mapSwapScreenUiState(
     swapStrategies: List<SwapStrategy>,
     quoteConfig: QuoteParamsConfig,
     transactions: List<Transaction>,
+    trackedTransactions: List<TrackedTransaction>,
 ): SwapperScreenUiState {
     val livePrice = selectedPair?.priceSol?.let { BigDecimal(it) } ?: BigDecimal.ZERO
+    val beingTracked = trackedTransactions.any { it.transaction.outToken.address == selectedPair?.baseToken?.address }
 
     return SwapperScreenUiState(
         pair = pair.filter { trackedTokenAddresses.contains(it.baseToken?.address) }
@@ -39,7 +42,7 @@ fun mapSwapScreenUiState(
         quoteParams = quoteConfig,
         selectedPair = selectedPair,
         selectedTransactions = transactions.filter { it.inToken.address == selectedPair?.baseToken?.address || it.outToken.address == selectedPair?.baseToken?.address }
-            .map { it.toTransactionUiModel(livePrice) },
+            .map { it.toTransactionUiModel(livePrice, beingTracked) },
         selectedStrategy = swapStrategies.firstOrNull { it.key == selectedPair?.baseToken?.address }
     )
 }
