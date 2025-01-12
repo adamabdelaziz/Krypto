@@ -19,5 +19,6 @@ data class TransactionUiModel(
     val fees: String?,
     val slippageBps: Int,
     val beingTrackedForProfit: Boolean,
-    val status: Status
+    val status: Status,
+    val currentMessage: String,
 )

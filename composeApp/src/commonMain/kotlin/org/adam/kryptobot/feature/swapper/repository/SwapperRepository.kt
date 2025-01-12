@@ -212,16 +212,15 @@ class SwapperRepositoryImpl(
 //                    Logger.d("${it.swapInfo.feeMint} : ${it.swapInfo.feeAmount} : ${it.swapInfo.ammKey} : ${it.swapInfo.label}}")
 //                }
 
-                Logger.d("Raw amounts In: ${quoteDto.inAmount} Out: ${quoteDto.outAmount}")
+                //Logger.d("Raw amounts In: ${quoteDto.inAmount} Out: ${quoteDto.outAmount}")
 
                 val readableIn = adjustTokenAmount(quoteDto.inAmount, decimals)
                 val readableOut = adjustTokenAmount(quoteDto.outAmount, outDecimals)
 
-                Logger.d("Human readable attempt in: $readableIn")
-                Logger.d("Human readable attempt out: $readableOut")
+                Logger.d("in amount: $readableIn | out: $readableOut")
 
-                Logger.d("In mint ${quoteDto.inputMint} is Solana ${quoteDto.inputMint == SOLANA_MINT_ADDRESS}")
-                Logger.d("Out mint ${quoteDto.outputMint} is Solana ${quoteDto.outputMint == SOLANA_MINT_ADDRESS}")
+                //Logger.d("In mint ${quoteDto.inputMint} is Solana ${quoteDto.inputMint == SOLANA_MINT_ADDRESS}")
+                //Logger.d("Out mint ${quoteDto.outputMint} is Solana ${quoteDto.outputMint == SOLANA_MINT_ADDRESS}")
 
                 val inputToken = TransactionToken(
                     symbol = inputSymbol,
@@ -425,27 +424,33 @@ class SwapperRepositoryImpl(
                         status = if (result.isSuccess) Status.SUCCESS else Status.FAIL,
                         transactionStep = TransactionStep.TRANSACTION_PERFORMED,
                     )
+
                     updateTransaction(updatedTransaction)
 
-                    if (shouldTrack) {
-                        val trackedTransaction = TrackedTransaction(
-                            transaction = updatedTransaction,
-                            highestObservedPriceSol = updatedTransaction.initialDexPriceSol,
-                            isCompleted = false,
-                        )
-                        val list = _currentTrackedTransactions.value.toMutableList()
-                        list.add(trackedTransaction)
-                        _currentTrackedTransactions.value = list.toList()
-                    } else {
-                        /*
-                             Some logic that links back to the original transaction that its completed?
-                         */
-                        val initialTransaction = getTrackedTransaction(transaction.inToken.address)
-                        initialTransaction?.let {
-                            Logger.d("Marking initial transaction as completed ${it.highestObservedPriceSol}")
-                            updateTrackedTransaction(it.markAsCompleted())
+                    if (result.isSuccess) {
+                        if (shouldTrack) {
+                            val trackedTransaction = TrackedTransaction(
+                                transaction = updatedTransaction,
+                                highestObservedPriceSol = updatedTransaction.initialDexPriceSol,
+                                isCompleted = false,
+                            )
+                            val list = _currentTrackedTransactions.value.toMutableList()
+                            list.add(trackedTransaction)
+                            _currentTrackedTransactions.value = list.toList()
+                        } else {
+                            /*
+                                 Some logic that links back to the original transaction that its completed?
+                             */
+                            val initialTransaction = getTrackedTransaction(transaction.inToken.address)
+                            initialTransaction?.let {
+                                Logger.d("Marking initial transaction as completed ${it.highestObservedPriceSol}")
+                                updateTrackedTransaction(it.markAsCompleted())
+                            }
                         }
+                    } else {
+                        Logger.d("Transaction failed")
                     }
+
                 } catch (e: Exception) {
                     Logger.d("Exception performing swap transaction ${e.message}")
                     e.printStackTrace()

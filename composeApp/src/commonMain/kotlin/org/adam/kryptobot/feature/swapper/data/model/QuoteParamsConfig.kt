@@ -8,7 +8,7 @@ data class QuoteParamsConfig(
 //    val inputAddress: String,
 //    val outputAddress: String,
     val safeMode: Boolean = true, //Extra button to confirm quote or not.
-    val amount: BigDecimal = BigDecimal.ZERO, // Double
+    val amount: BigDecimal  = BigDecimal(0.00001), // Double
     val slippageBps: Int = 100, //Int 1% slippage (100 basis points)
     val swapMode: SwapMode = SwapMode.ExactIn,
     val dexes: Set<Dex> = setOf(),

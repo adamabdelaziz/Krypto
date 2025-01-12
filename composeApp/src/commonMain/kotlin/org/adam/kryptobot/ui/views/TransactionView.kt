@@ -105,23 +105,19 @@ fun TransactionView(modifier: Modifier, transaction: TransactionUiModel, onClick
             }
 
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                if (transaction.beingTrackedForProfit) {
-                    BasicText(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                        text = if (transaction.status == Status.SUCCESS) "Waiting for profit" else if (transaction.status == Status.FAIL) "Failed Transaction" else "Nani",
-                        color = CurrentColors.onSurface,
-                    )
-                } else {
+                BasicText(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                    text = transaction.currentMessage,
+                    color = CurrentColors.onSurface,
+                )
+                if (transaction.transactionStep != TransactionStep.TRANSACTION_PERFORMED) {
                     BasicButton(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                         text = "Swap",
                         onClick = onClick,
-                        enabled = transaction.transactionStep != TransactionStep.TRANSACTION_PERFORMED
                     )
                 }
-
             }
         }
-
     }
 }

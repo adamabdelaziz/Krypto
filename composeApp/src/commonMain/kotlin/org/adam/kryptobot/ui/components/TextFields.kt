@@ -9,8 +9,12 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -108,13 +112,22 @@ fun ValidatedTextField(
     isError: Boolean = false,
     validate: (String) -> Boolean = { it.toIntOrNull() != null || it.isEmpty() }
 ) {
+    var localText by rememberSaveable { mutableStateOf(text) }
+
+    LaunchedEffect(text) {
+        if (text != localText) {
+            localText = text
+        }
+    }
+
     OutlinedTextField(
         modifier = modifier,
         colors = AppOutlinedTextFieldColors,
         shape = CurrentShapes.pill,
-        value = text,
+        value = localText,
         onValueChange = { updatedText ->
             if (validate(updatedText)) {
+                localText = updatedText
                 onTextChanged(updatedText)
             }
         },

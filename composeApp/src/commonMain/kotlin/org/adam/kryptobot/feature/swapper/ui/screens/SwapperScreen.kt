@@ -75,7 +75,7 @@ class SwapperScreen : Screen {
                     CenteredRow {
                         ValidatedTextField(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            text = state.quoteParams.amount.toStringOrEmpty(),
+                            text = state.quoteParams.amount.toPlainString(),
                             onTextChanged = { onEvent(SwapperScreenEvent.UpdateAmount(it.toBigDecimalOrNull() ?: BigDecimal.ZERO)) },
                             label = "Enter Amount",
                             isError = state.quoteParams.amount == BigDecimal.ZERO,

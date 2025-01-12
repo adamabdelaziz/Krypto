@@ -80,7 +80,7 @@ class SwapperScreenModel(
                             strategy = strat
                         )
 
-                        Logger.d("Should exit at $price amount $amount for ${trans.transaction.outToken.symbol}")
+                        Logger.d("Should exit at $price amount $amount for ${trans.transaction.outToken.symbol} initial price was ${trans.transaction.initialDexPriceSol}")
 
                         getQuote(
                             baseTokenAddress = dexPair.quoteToken?.address,

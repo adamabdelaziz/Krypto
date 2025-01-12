@@ -1,6 +1,5 @@
 package org.adam.kryptobot.feature.swapper.ui.screens
 
-import co.touchlab.kermit.Logger
 import org.adam.kryptobot.feature.scanner.data.mappers.toDexPairSwapUiModel
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
 import org.adam.kryptobot.feature.scanner.enum.Chain
@@ -32,7 +31,7 @@ fun mapSwapScreenUiState(
     trackedTransactions: List<TrackedTransaction>,
 ): SwapperScreenUiState {
     val livePrice = selectedPair?.priceSol?.let { BigDecimal(it) } ?: BigDecimal.ZERO
-    val beingTracked = trackedTransactions.any { it.transaction.outToken.address == selectedPair?.baseToken?.address }
+    val trackedTransaction = trackedTransactions.firstOrNull { it.transaction.outToken.address == selectedPair?.baseToken?.address }
 
     return SwapperScreenUiState(
         pair = pair.filter { trackedTokenAddresses.contains(it.baseToken?.address) }
@@ -42,7 +41,7 @@ fun mapSwapScreenUiState(
         quoteParams = quoteConfig,
         selectedPair = selectedPair,
         selectedTransactions = transactions.filter { it.inToken.address == selectedPair?.baseToken?.address || it.outToken.address == selectedPair?.baseToken?.address }
-            .map { it.toTransactionUiModel(livePrice, beingTracked) },
-        selectedStrategy = swapStrategies.firstOrNull { it.key == selectedPair?.baseToken?.address }
+            .map { it.toTransactionUiModel(livePrice, trackedTransaction) },
+        selectedStrategy = swapStrategies.firstOrNull { it.key == selectedPair?.baseToken?.address },
     )
 }

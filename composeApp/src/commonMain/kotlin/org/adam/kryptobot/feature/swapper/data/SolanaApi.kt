@@ -7,28 +7,33 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kryptobot.composeapp.generated.resources.Res
-import org.adam.kryptobot.util.SECOND_WALLET_PUBLIC_KEY
+import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
+import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 import org.adam.kryptobot.util.decodeBase58
 import org.adam.kryptobot.util.encodeBase58
+import org.sol4k.AccountMeta
 import org.sol4k.Base58
 import org.sol4k.Connection
+import org.sol4k.Constants.ASSOCIATED_TOKEN_PROGRAM_ID
+import org.sol4k.Constants.SYSTEM_PROGRAM
+import org.sol4k.Constants.SYSVAR_RENT_ADDRESS
+import org.sol4k.Constants.TOKEN_PROGRAM_ID
 import org.sol4k.Keypair
 import org.sol4k.PublicKey
 import org.sol4k.RpcUrl
+import org.sol4k.Transaction
 import org.sol4k.VersionedTransaction
 import org.sol4k.api.Commitment
-import org.sol4k.api.TransactionSimulationError
-import org.sol4k.api.TransactionSimulationSuccess
+import org.sol4k.instruction.BaseInstruction
 import java.math.BigInteger
-import kotlin.io.encoding.ExperimentalEncodingApi
-import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 
 interface SolanaApi {
 
@@ -37,6 +42,8 @@ interface SolanaApi {
         rpcUrl: RpcUrl = RpcUrl.MAINNNET,
         commitment: Commitment = Commitment.CONFIRMED
     ): BigInteger
+
+    suspend fun createATAForWSOL(ownerWalletAddress: String)
 
     fun performSwapTransaction(
         privateKey: String,
@@ -74,6 +81,82 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         val balance = connection.getBalance(key)
         //Logger.d("Balance is $balance")
         return balance
+    }
+
+    /*
+         TODO: FIX this and it isnt the hash since its valid so fuck that error message
+     */
+    @OptIn(InternalCoroutinesApi::class)
+    override suspend fun createATAForWSOL(ownerWalletAddress: String) {
+        val solanaClient = Connection(RpcUrl.MAINNNET, Commitment.CONFIRMED)
+        val mintAddress = PublicKey(SOLANA_MINT_ADDRESS)
+        val ownerPublicKey = PublicKey(ownerWalletAddress)
+
+        val ataAddress = PublicKey.findProgramDerivedAddress(ownerPublicKey, mintAddress)
+
+        val accountInfo = solanaClient.getAccountInfo(ataAddress.publicKey)
+
+        if (accountInfo == null) {
+            val createAccountInstruction = createAssociatedTokenAccountInstruction(
+                ownerPublicKey,
+                ownerPublicKey,
+                mintAddress
+            )
+            val recentBlockhash = solanaClient.getLatestBlockhash(Commitment.CONFIRMED)
+            var isValid = solanaClient.isBlockhashValid(recentBlockhash, Commitment.CONFIRMED)
+
+            Logger.d("Hash valid $isValid")
+
+            while (!isValid) {
+                Logger.d("Non valid hash retrying")
+                delay(1000L)
+                val monkas = solanaClient.getLatestBlockhash(Commitment.CONFIRMED)
+                isValid = solanaClient.isBlockhashValid(monkas, Commitment.CONFIRMED)
+            }
+
+            val transaction = Transaction(
+                recentBlockhash = recentBlockhash,
+                instructions = listOf(createAccountInstruction),
+                feePayer = ownerPublicKey
+            )
+            val versionedTransaction = VersionedTransaction.from(transaction.serialize().toString())
+            val keypair = Keypair.fromSecretKey(SECOND_WALLET_PRIVATE_KEY.decodeBase58())
+            versionedTransaction.sign(keypair)
+            //transaction.sign(keypair)
+            val signature = solanaClient.sendTransaction(versionedTransaction)
+            Logger.d("ATA created for wSOL at $ataAddress signature $signature")
+        } else {
+            Logger.d("ATA already exists for wSOL at $ataAddress")
+        }
+    }
+
+    private fun createAssociatedTokenAccountInstruction(
+        payer: PublicKey,
+        owner: PublicKey,
+        mint: PublicKey
+    ): BaseInstruction {
+        val associatedTokenAddress = PublicKey.findProgramAddress(
+            listOf(owner, TOKEN_PROGRAM_ID, mint),
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        ).publicKey
+
+        val keys = listOf(
+            AccountMeta(payer, signer = true, writable = true),
+            AccountMeta(associatedTokenAddress, signer = false, writable = true),
+            AccountMeta(owner, signer = false, writable = false),
+            AccountMeta(mint, signer = false, writable = false),
+            AccountMeta(SYSTEM_PROGRAM, signer = false, writable = false),
+            AccountMeta(TOKEN_PROGRAM_ID, signer = false, writable = false),
+            AccountMeta(SYSVAR_RENT_ADDRESS, signer = false, writable = false)
+        )
+
+        val data = ByteArray(0)
+
+        return BaseInstruction(
+            programId = ASSOCIATED_TOKEN_PROGRAM_ID,
+            keys = keys,
+            data = data
+        )
     }
 
     /*

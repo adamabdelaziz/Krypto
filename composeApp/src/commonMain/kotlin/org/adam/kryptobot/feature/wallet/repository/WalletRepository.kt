@@ -42,6 +42,7 @@ class WalletRepositoryImpl(
 
     override suspend fun refreshBalance() {
         val balance = solanaApi.getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
+        solanaApi.createATAForWSOL(SECOND_WALLET_PUBLIC_KEY)
         val tokenBalances = solanaApi.getTokenBalances(SECOND_WALLET_PUBLIC_KEY)
         updateWallet {
             it.copy(balance = balance.toString(), tokenBalance = tokenBalances)
