@@ -7,8 +7,6 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.double
@@ -34,27 +32,34 @@ import org.sol4k.VersionedTransaction
 import org.sol4k.api.Commitment
 import org.sol4k.instruction.BaseInstruction
 import java.math.BigInteger
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 interface SolanaApi {
-
     fun getWalletBalance(
         walletKey: String,
-        rpcUrl: RpcUrl = RpcUrl.MAINNNET,
+        rpcUrl: String = rpcUrlToUse,
         commitment: Commitment = Commitment.CONFIRMED
     ): BigInteger
 
-    suspend fun createATAForWSOL(ownerWalletAddress: String)
+    suspend fun createATAForWSOL(rpcUrl: String = rpcUrlToUse, ownerWalletAddress: String)
 
     fun performSwapTransaction(
         privateKey: String,
         instructions: String,
-        rpcUrl: RpcUrl = RpcUrl.MAINNNET,
+        rpcUrl: String = rpcUrlToUse,
         commitment: Commitment = Commitment.CONFIRMED,
     ): Result<String>
 
     fun getMintDecimalsAmount(address: String): Int
 
     suspend fun getTokenBalances(publicKey: String): List<Pair<String, Double>>
+
+    companion object {
+        private const val SPL_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        private const val HELIUS_URL = "https://mainnet.helius-rpc.com/?api-key=b0a749b1-ac7a-4f58-a95d-2a9ce0b7fef6" //Default being RpcUrl.MAINNET
+        val rpcUrlToUse = HELIUS_URL
+    }
 }
 
 /**
@@ -62,7 +67,6 @@ interface SolanaApi {
  * @see getTokenBalances
  */
 class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
-
     //TODO: Seems to only be necessary if we want to get the private key from the public key or for signing for transactions(which means it wouldnt need to be public)
     private fun getWalletKeypair(privateKey: String): Keypair {
         val wallet = Keypair.fromSecretKey(Base58.decode(privateKey))
@@ -73,7 +77,7 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
 
     override fun getWalletBalance(
         walletKey: String,
-        rpcUrl: RpcUrl,
+        rpcUrl: String,
         commitment: Commitment
     ): BigInteger {
         val connection = Connection(rpcUrl, commitment)
@@ -83,12 +87,9 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         return balance
     }
 
-    /*
-         TODO: FIX this and it isnt the hash since its valid so fuck that error message
-     */
-    @OptIn(InternalCoroutinesApi::class)
-    override suspend fun createATAForWSOL(ownerWalletAddress: String) {
-        val solanaClient = Connection(RpcUrl.MAINNNET, Commitment.CONFIRMED)
+    @OptIn(ExperimentalEncodingApi::class)
+    override suspend fun createATAForWSOL(rpcUrl: String, ownerWalletAddress: String) {
+        val solanaClient = Connection(rpcUrl, Commitment.CONFIRMED)
         val mintAddress = PublicKey(SOLANA_MINT_ADDRESS)
         val ownerPublicKey = PublicKey(ownerWalletAddress)
 
@@ -97,34 +98,35 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         val accountInfo = solanaClient.getAccountInfo(ataAddress.publicKey)
 
         if (accountInfo == null) {
-            val createAccountInstruction = createAssociatedTokenAccountInstruction(
-                ownerPublicKey,
-                ownerPublicKey,
-                mintAddress
-            )
-            val recentBlockhash = solanaClient.getLatestBlockhash(Commitment.CONFIRMED)
-            var isValid = solanaClient.isBlockhashValid(recentBlockhash, Commitment.CONFIRMED)
+            try {
+                val createAccountInstruction = createAssociatedTokenAccountInstruction(
+                    ownerPublicKey,
+                    ownerPublicKey,
+                    mintAddress
+                )
 
-            Logger.d("Hash valid $isValid")
+                val recentBlockhash = solanaClient.getLatestBlockhashExtended(Commitment.FINALIZED).blockhash
+                val isValid = solanaClient.isBlockhashValid(recentBlockhash, Commitment.CONFIRMED)
+                Logger.d("Hash valid $isValid")
 
-            while (!isValid) {
-                Logger.d("Non valid hash retrying")
-                delay(1000L)
-                val monkas = solanaClient.getLatestBlockhash(Commitment.CONFIRMED)
-                isValid = solanaClient.isBlockhashValid(monkas, Commitment.CONFIRMED)
+                val transaction = Transaction(
+                    recentBlockhash = recentBlockhash,
+                    instructions = listOf(createAccountInstruction),
+                    feePayer = ownerPublicKey
+                )
+
+                val serializedTransaction = transaction.serialize()
+                val base64EncodedTransaction = Base64.encode(serializedTransaction)
+                val versionedTransaction = VersionedTransaction.from(base64EncodedTransaction)
+
+                val keypair = Keypair.fromSecretKey(SECOND_WALLET_PRIVATE_KEY.decodeBase58())
+                versionedTransaction.sign(keypair)
+
+                val signature = solanaClient.sendTransaction(versionedTransaction)
+                Logger.d("ATA created for wSOL at $ataAddress signature $signature")
+            } catch (e: Exception) {
+                Logger.e("Create ATA Exception: ${e.message}")
             }
-
-            val transaction = Transaction(
-                recentBlockhash = recentBlockhash,
-                instructions = listOf(createAccountInstruction),
-                feePayer = ownerPublicKey
-            )
-            val versionedTransaction = VersionedTransaction.from(transaction.serialize().toString())
-            val keypair = Keypair.fromSecretKey(SECOND_WALLET_PRIVATE_KEY.decodeBase58())
-            versionedTransaction.sign(keypair)
-            //transaction.sign(keypair)
-            val signature = solanaClient.sendTransaction(versionedTransaction)
-            Logger.d("ATA created for wSOL at $ataAddress signature $signature")
         } else {
             Logger.d("ATA already exists for wSOL at $ataAddress")
         }
@@ -165,7 +167,7 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
     override fun performSwapTransaction(
         privateKey: String,
         instructions: String,
-        rpcUrl: RpcUrl,
+        rpcUrl: String,
         commitment: Commitment,
     ): Result<String> {
         val solanaClient = Connection(rpcUrl, commitment)
@@ -247,9 +249,4 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
 
         return returnList
     }
-
-//    companion object {
-//        const val SPL_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-//    }
-
 }

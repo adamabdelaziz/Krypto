@@ -27,6 +27,7 @@ import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 import org.adam.kryptobot.util.getSwapTokenAddresses
 import org.hipparchus.analysis.function.Log
 import java.math.BigDecimal
+import java.math.RoundingMode
 import kotlin.math.pow
 
 interface SwapperRepository {
@@ -238,6 +239,14 @@ class SwapperRepositoryImpl(
                     decimals = outDecimals
                 )
 
+                val canExit = seeIfExitRouteExists(
+                    inputAddress = outputAddress,
+                    outputAddress = inputAddress,
+                    amountToUse = readableOut.setScale(2, RoundingMode.DOWN).toPlainString()
+                )
+
+                Logger.d("Can Exit: $canExit")
+
                 createTransaction(
                     quote = quoteRaw,
                     amount = amount,
@@ -251,6 +260,32 @@ class SwapperRepositoryImpl(
             } catch (e: Exception) {
                 Logger.d("Exception getting Quote ${e.message}")
             }
+        }
+    }
+
+    private suspend fun seeIfExitRouteExists(inputAddress: String, outputAddress: String, amountToUse: String): Boolean {
+        val (quoteRaw, quoteDto) = swapApi.getQuote(
+            inputAddress = inputAddress,
+            outputAddress = outputAddress,
+            amount = amountToUse,
+            slippageBps = _quoteConfig.value.slippageBps,
+            swapMode = SwapMode.ExactIn.name,
+            dexes = _quoteConfig.value.dexes.map { it.name },
+            excludeDexes = _quoteConfig.value.excludeDexes.map { it.name },
+            restrictIntermediateTokens = _quoteConfig.value.restrictIntermediateTokens,
+            onlyDirectRoutes = _quoteConfig.value.onlyDirectRoutes,
+            asLegacyTransaction = _quoteConfig.value.asLegacyTransaction,
+            platformFeeBps = _quoteConfig.value.platformFeeBps,
+            maxAccounts = _quoteConfig.value.maxAccounts,
+            autoSlippage = _quoteConfig.value.autoSlippage,
+            maxAutoSlippageBps = _quoteConfig.value.maxAutoSlippageBps,
+            autoSlippageCollisionUsdValue = _quoteConfig.value.autoSlippageCollisionUsdValue
+        )
+
+        return if (quoteRaw == null || quoteDto == null)
+            false
+        else {
+            return quoteDto.routePlan.isNotEmpty()
         }
     }
 
