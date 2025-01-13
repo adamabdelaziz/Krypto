@@ -20,4 +20,5 @@ data class DexPairSwapUiModel(
     val priceChangeSinceScanned: Double  = 0.000000000000000,
     val recentPriceChangeSinceScanned: Double = 0.000000000000000,
     val liquidityMarketRatio: Double = 0.0,
+    val liquidityScore: Double  = 0.0,
 )

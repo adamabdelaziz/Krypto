@@ -103,3 +103,4 @@ data class Social(
 data class Boosts(
     val active: Int? = null
 )
+

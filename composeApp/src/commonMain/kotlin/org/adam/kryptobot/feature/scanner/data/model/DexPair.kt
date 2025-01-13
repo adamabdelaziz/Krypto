@@ -32,3 +32,27 @@ data class DexPair(
     val recentPriceChangeSinceScanned: Double = 0.000000000000000,
     val liquidityMarketRatio: Double = 0.0,
 )
+
+fun calculateLiquidityScore(pair: DexPair): Double {
+    val liquidityUsd = pair.liquidity?.usd ?: 0.0
+    val liquidityBase = pair.liquidity?.base ?: 0.0
+    val liquidityQuote = pair.liquidity?.quote ?: 0.0
+
+    val volume = pair.volume?.h24 ?: 0.0
+
+    val transactionCount = pair.transactions?.h24?.buys ?: (0 + (pair.transactions?.h24?.sells ?: 0))
+
+    val liquidityWeight = 0.4
+    val volumeWeight = 0.3
+    val transactionCountWeight = 0.3
+
+    val liquidityFactor = liquidityUsd / 1_000_000
+    val volumeFactor = volume / 1_000_000
+    val transactionCountFactor = transactionCount.toDouble() / 100
+
+    val liquidityScore = (liquidityFactor * liquidityWeight) +
+            (volumeFactor * volumeWeight) +
+            (transactionCountFactor * transactionCountWeight)
+
+    return liquidityScore
+}

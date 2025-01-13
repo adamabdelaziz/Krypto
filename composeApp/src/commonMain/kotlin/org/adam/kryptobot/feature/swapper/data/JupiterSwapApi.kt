@@ -15,6 +15,9 @@ import io.ktor.http.Parameters
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapInstructionsDto
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterSwapResponseDto
@@ -43,6 +46,7 @@ interface JupiterSwapApi {
     suspend fun swapTokens(
         quoteResponse: String,
         userPublicKey: String,
+        prioritizationFee: Long? = null,
     ): JupiterSwapResponseDto?
 
     suspend fun swapInstructions(
@@ -135,18 +139,20 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
     override suspend fun swapTokens(
         quoteResponse: String,
         userPublicKey: String,
+        prioritizationFee: Long?
     ): JupiterSwapResponseDto? {
         return try {
             val response: HttpResponse = client.post(POST_SWAP_URL) {
                 contentType(ContentType.Application.Json)
                 accept(ContentType.Application.Json)
                 setBody(
-                    """
-                {
-                    "quoteResponse": $quoteResponse,
-                    "userPublicKey": "$userPublicKey"
-                }
-                """.trimIndent()
+                    buildJsonObject {
+                        put("quoteResponse", Json.parseToJsonElement(quoteResponse))
+                        put("userPublicKey", userPublicKey)
+                        put("wrapAndUnwrapSol", true)
+                        put("prioritizationFeeLamports", 500_000)
+                        put("computeUnitLimit", 2_000_000) // Increase compute units
+                    }.toString()
                 )
             }
 

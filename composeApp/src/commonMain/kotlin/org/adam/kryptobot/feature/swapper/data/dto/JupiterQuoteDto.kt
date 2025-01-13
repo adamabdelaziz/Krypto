@@ -53,3 +53,33 @@ fun JupiterQuoteDto.getTotalFees(): BigDecimal {
 
     return routeFees + platformFee
 }
+
+fun JupiterQuoteDto.debugLog() {
+    Logger.d {
+        "Input Mint: $inputMint, In Amount: $inAmount"
+    }
+    Logger.d {
+        "Output Mint: $outputMint, Out Amount: $outAmount"
+    }
+    Logger.d {
+        "Other Amount Threshold: $otherAmountThreshold, Swap Mode: $swapMode"
+    }
+    Logger.d {
+        "Slippage Bps: $slippageBps, Price Impact: $priceImpactPct"
+    }
+    Logger.d {
+        "Route Plan: ${routePlan.map { it.swapInfo }} "
+    }
+    Logger.d {
+        "Total Fees: ${getTotalFees()}"
+    }
+    Logger.d {
+        "Time Taken: $timeTaken, Context Slot: $contextSlot"
+    }
+
+    platformFee?.let {
+        Logger.d {
+            "Platform Fee: ${it.amount} Bps: ${it.feeBps}"
+        }
+    }
+}

@@ -13,6 +13,7 @@ import org.adam.kryptobot.feature.scanner.enum.Dex
 import org.adam.kryptobot.feature.swapper.data.JupiterSwapApi
 import org.adam.kryptobot.feature.swapper.data.SolanaApi
 import org.adam.kryptobot.feature.swapper.data.dto.JupiterQuoteDto
+import org.adam.kryptobot.feature.swapper.data.dto.debugLog
 import org.adam.kryptobot.feature.swapper.data.model.QuoteParamsConfig
 import org.adam.kryptobot.feature.swapper.data.model.SwapStrategy
 import org.adam.kryptobot.feature.swapper.data.model.TrackedTransaction
@@ -203,10 +204,16 @@ class SwapperRepositoryImpl(
                 if (quoteDto == null) {
                     Logger.d("Quote DTO null")
                     return@withContext
+                } else {
+                    quoteDto.debugLog()
                 }
 
                 val readableIn = adjustTokenAmount(quoteDto.inAmount, decimals)
                 val readableOut = adjustTokenAmount(quoteDto.outAmount, outDecimals)
+
+                if (shouldTrack) {
+                    solanaApi.createATAForMint(ownerWalletAddress = SECOND_WALLET_PUBLIC_KEY, mintAddress = baseTokenAddress)
+                }
 
                 Logger.d("in amount: $readableIn | out: $readableOut")
 
@@ -226,20 +233,12 @@ class SwapperRepositoryImpl(
                     decimals = outDecimals
                 )
 
-
-                val canExit = if (shouldTrack) {
-                    seeIfExitRouteExists(
-                        inputAddress = outputAddress,
-                        outputAddress = inputAddress,
-                        amountToUse = quoteDto.outAmount
-                    )
+                val valid = if (shouldTrack) {
+                    solanaApi.checkTokenValidity(mintAddress = baseTokenAddress)
                 } else {
                     true
                 }
-
-                Logger.d("Can Exit: $canExit")
-
-                if (canExit) {
+                if (valid) {
                     createTransaction(
                         quote = quoteRaw,
                         amount = amount,
@@ -250,10 +249,7 @@ class SwapperRepositoryImpl(
                         initialPrice = initialPrice,
                         shouldTrack = shouldTrack,
                     )
-                } else {
-                    //TODO  Add base token to a filter list and likely remove it from tracked list once this is a use case
                 }
-
             } catch (e: Exception) {
                 Logger.d("Exception getting Quote ${e.message}")
             }
@@ -393,8 +389,9 @@ class SwapperRepositoryImpl(
                 transaction?.let { tx ->
                     val instructions = swapApi.swapTokens(
                         quoteResponse = tx.quoteRaw,
-                        userPublicKey = SECOND_WALLET_PUBLIC_KEY
+                        userPublicKey = SECOND_WALLET_PUBLIC_KEY,
                     )
+
                     instructions?.let {
                         val updatedTransaction = tx.copy(swapResponse = it, transactionStep = TransactionStep.INSTRUCTIONS_MADE)
                         updateTransaction(updatedTransaction)
@@ -497,19 +494,19 @@ class SwapperRepositoryImpl(
         val totalTokens = transaction.outToken.amount
 
         return when (strategy.exitStrategy) {
-            SwapStrategy.ExitStrategy.SWAP_ALL -> totalTokens.toPlainString() // Convert to string
+            SwapStrategy.ExitStrategy.SWAP_ALL -> totalTokens.toPlainString()
 
             SwapStrategy.ExitStrategy.SWAP_PARTIAL -> {
                 val percentage = strategy.exitPct ?: BigDecimal(100)
-                (totalTokens * (percentage / BigDecimal(100))).toPlainString() // Convert to string
+                (totalTokens * (percentage / BigDecimal(100))).toPlainString()
             }
 
             SwapStrategy.ExitStrategy.BREAK_EVEN -> {
                 val initialSolSpent = transaction.initialDexPriceSol * totalTokens
                 if (currentPrice * totalTokens >= initialSolSpent) {
-                    (initialSolSpent / currentPrice).toPlainString() // Convert to string
+                    (initialSolSpent / currentPrice).toPlainString()
                 } else {
-                    BigDecimal.ZERO.toPlainString() // Return zero as string
+                    BigDecimal.ZERO.toPlainString()
                 }
             }
         }

@@ -9,16 +9,16 @@ data class QuoteParamsConfig(
 //    val outputAddress: String,
     val safeMode: Boolean = true, //Extra button to confirm quote or not.
     val amount: BigDecimal  = BigDecimal.ZERO, // Double
-    val slippageBps: Int = 100, //Int 1% slippage (100 basis points)
+    val slippageBps: Int = 300, //Int 1% slippage (100 basis points)
     val swapMode: SwapMode = SwapMode.ExactIn,
     val dexes: Set<Dex> = setOf(),
-    val excludeDexes: Set<Dex> = setOf(Dex.Orca, Dex.Uniswap, Dex.Meteora),
+    val excludeDexes: Set<Dex> = setOf(),
     val restrictIntermediateTokens: Boolean = false,
     val onlyDirectRoutes: Boolean = false,
     val asLegacyTransaction: Boolean = false,
     val platformFeeBps: Int? = null, // Int
     val maxAccounts: Int? = null, // Int
-    val autoSlippage: Boolean = false,
-    val maxAutoSlippageBps: Int? = null, // Int
+    val autoSlippage: Boolean = true,
+    val maxAutoSlippageBps: Int? = 100, // Int
     val autoSlippageCollisionUsdValue: Int? = null, // Int
 )

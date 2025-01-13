@@ -248,8 +248,16 @@ class SwapperScreenModel(
     }
 
     private fun getQuote(dexPair: DexPairSwapUiModel) {
-        Logger.d("Price SOL is ${dexPair.priceSol}")
+        Logger.d("Price SOL is ${dexPair.priceSol} liquidity score is ${dexPair.liquidityScore}")
+        val slippageReverse = if (dexPair.liquidityScore > 1.5) 0.5 else 2.0
+        val platformFeeReverse = if (dexPair.liquidityScore > 1.5) 0.3 else 0.1
+
         screenModelScope.launch {
+            updateQuoteConfig { copy(
+                slippageBps = (slippageReverse * 100).toInt(),
+                platformFeeBps = (platformFeeReverse * 100).toInt()
+            ) }
+
             getQuote(
                 baseTokenAddress = dexPair.baseToken?.address,
                 baseTokenSymbol = dexPair.baseToken?.symbol,

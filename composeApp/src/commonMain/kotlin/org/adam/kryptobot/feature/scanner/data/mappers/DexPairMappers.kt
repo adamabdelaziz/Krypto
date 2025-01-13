@@ -2,6 +2,7 @@ package org.adam.kryptobot.feature.scanner.data.mappers
 
 import org.adam.kryptobot.feature.scanner.data.dto.PairDto
 import org.adam.kryptobot.feature.scanner.data.model.DexPair
+import org.adam.kryptobot.feature.scanner.data.model.calculateLiquidityScore
 import org.adam.kryptobot.feature.scanner.ui.model.DexPairScanUiModel
 import org.adam.kryptobot.feature.swapper.ui.model.DexPairSwapUiModel
 
@@ -109,5 +110,6 @@ fun DexPair.toDexPairSwapUiModel(): DexPairSwapUiModel {
         priceChangeSinceScanned = this.priceChangeSinceScanned,
         recentPriceChangeSinceScanned = this.recentPriceChangeSinceScanned,
         liquidityMarketRatio = this.liquidityMarketRatio,
+        liquidityScore = calculateLiquidityScore(this)
     )
 }

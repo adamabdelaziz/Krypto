@@ -9,7 +9,9 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.double
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -21,6 +23,7 @@ import org.sol4k.AccountMeta
 import org.sol4k.Base58
 import org.sol4k.Connection
 import org.sol4k.Constants.ASSOCIATED_TOKEN_PROGRAM_ID
+import org.sol4k.Constants.COMPUTE_BUDGET_PROGRAM_ID
 import org.sol4k.Constants.SYSTEM_PROGRAM
 import org.sol4k.Constants.SYSVAR_RENT_ADDRESS
 import org.sol4k.Constants.TOKEN_PROGRAM_ID
@@ -31,6 +34,7 @@ import org.sol4k.Transaction
 import org.sol4k.VersionedTransaction
 import org.sol4k.api.Commitment
 import org.sol4k.instruction.BaseInstruction
+import org.sol4k.instruction.Instruction
 import java.math.BigInteger
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -42,21 +46,22 @@ interface SolanaApi {
         commitment: Commitment = Commitment.CONFIRMED
     ): BigInteger
 
-    suspend fun createATAForWSOL(rpcUrl: String = rpcUrlToUse, ownerWalletAddress: String)
+    suspend fun createATAForMint(rpcUrl: String = rpcUrlToUse, ownerWalletAddress: String, mintAddress: String = SOLANA_MINT_ADDRESS)
 
     fun performSwapTransaction(
         privateKey: String,
         instructions: String,
         rpcUrl: String = rpcUrlToUse,
-        commitment: Commitment = Commitment.CONFIRMED,
+        commitment: Commitment = Commitment.FINALIZED,
     ): Result<String>
 
     fun getMintDecimalsAmount(address: String): Int
 
     suspend fun getTokenBalances(publicKey: String): List<Pair<String, Double>>
+    suspend fun checkTokenValidity(mintAddress: String, rpcUrl: String = rpcUrlToUse): Boolean
 
     companion object {
-        private const val SPL_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+
         private const val HELIUS_URL = "https://mainnet.helius-rpc.com/?api-key=b0a749b1-ac7a-4f58-a95d-2a9ce0b7fef6" //Default being RpcUrl.MAINNET
         val rpcUrlToUse = HELIUS_URL
     }
@@ -88,12 +93,12 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
     }
 
     @OptIn(ExperimentalEncodingApi::class)
-    override suspend fun createATAForWSOL(rpcUrl: String, ownerWalletAddress: String) {
+    override suspend fun createATAForMint(rpcUrl: String, ownerWalletAddress: String, mintAddress: String) {
         val solanaClient = Connection(rpcUrl, Commitment.CONFIRMED)
-        val mintAddress = PublicKey(SOLANA_MINT_ADDRESS)
+        val mintKey = PublicKey(mintAddress)
         val ownerPublicKey = PublicKey(ownerWalletAddress)
 
-        val ataAddress = PublicKey.findProgramDerivedAddress(ownerPublicKey, mintAddress)
+        val ataAddress = PublicKey.findProgramDerivedAddress(ownerPublicKey, mintKey)
 
         val accountInfo = solanaClient.getAccountInfo(ataAddress.publicKey)
 
@@ -102,7 +107,7 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
                 val createAccountInstruction = createAssociatedTokenAccountInstruction(
                     ownerPublicKey,
                     ownerPublicKey,
-                    mintAddress
+                    mintKey
                 )
 
                 val recentBlockhash = solanaClient.getLatestBlockhashExtended(Commitment.FINALIZED).blockhash
@@ -130,6 +135,20 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         } else {
             Logger.d("ATA already exists for wSOL at $ataAddress")
         }
+    }
+
+    private fun requestUnits(units: Int): BaseInstruction {
+        val data = ByteArray(4) // Represent the compute units as a byte array
+        data[0] = (units shr 24).toByte()
+        data[1] = (units shr 16).toByte()
+        data[2] = (units shr 8).toByte()
+        data[3] = units.toByte()
+
+        return BaseInstruction(
+            programId = COMPUTE_BUDGET_PROGRAM_ID,
+            keys = listOf(),
+            data = data
+        )
     }
 
     private fun createAssociatedTokenAccountInstruction(
@@ -171,13 +190,8 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         commitment: Commitment,
     ): Result<String> {
         val solanaClient = Connection(rpcUrl, commitment)
-
-//        val balance = getWalletBalance(SECOND_WALLET_PUBLIC_KEY)
-//        Logger.d("Balance is $balance")
-
-        val hash = solanaClient.getLatestBlockhash(commitment)
+        val hash = solanaClient.getLatestBlockhashExtended(commitment).blockhash
         val valid = solanaClient.isBlockhashValid(hash, commitment)
-        Logger.d("Hash valid: $valid")
 
         val transaction = VersionedTransaction.from(instructions)
         val keypair = Keypair.fromSecretKey(privateKey.decodeBase58())
@@ -248,5 +262,55 @@ class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
         }
 
         return returnList
+    }
+
+    override suspend fun checkTokenValidity(mintAddress: String, rpcUrl: String): Boolean {
+        val requestBody = """
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getAccountInfo",
+            "params": [
+                "$mintAddress",
+                { "encoding": "jsonParsed" }
+            ]
+        }
+    """
+
+        return try {
+            val response: HttpResponse = client.post(rpcUrl) {
+                setBody(requestBody)
+                headers { append("Content-Type", "application/json") }
+            }
+
+            val responseBody: JsonObject =
+                Json.parseToJsonElement(response.body<String>()).jsonObject
+
+            val value = responseBody["result"]
+                ?.jsonObject?.get("value")
+
+            if (value == null) {
+                Logger.d("Token $mintAddress is NOT valid (null response).")
+                return false
+            }
+
+            val data = value.jsonObject["data"]
+                ?.jsonObject?.get("parsed")
+                ?.jsonObject?.get("info")
+
+            val decimals = data?.jsonObject?.get("decimals")?.jsonPrimitive?.intOrNull
+            val supply = data?.jsonObject?.get("supply")?.jsonPrimitive?.contentOrNull
+
+            if (decimals != null && supply != null) {
+                Logger.d("Token $mintAddress is valid with decimals: $decimals, supply: $supply")
+                true
+            } else {
+                Logger.d("Token $mintAddress is NOT valid or doesn't exist.")
+                false
+            }
+        } catch (e: Exception) {
+            Logger.d("Error verifying token $mintAddress: ${e.message}")
+            false
+        }
     }
 }
