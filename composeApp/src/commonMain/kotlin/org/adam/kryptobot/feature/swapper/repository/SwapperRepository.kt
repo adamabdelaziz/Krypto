@@ -227,7 +227,7 @@ class SwapperRepositoryImpl(
                     symbol = inputSymbol,
                     address = inputAddress,
                     amount = readableIn,
-                    amountLamports = quoteDto?.inAmount?.toLong() ?: 0,
+                    amountLamports = quoteDto.inAmount?.toLong() ?: 0,
                     decimals = decimals
                 )
 
@@ -235,28 +235,31 @@ class SwapperRepositoryImpl(
                     symbol = outputSymbol,
                     address = outputAddress,
                     amount = readableOut,
-                    amountLamports = quoteDto?.outAmount?.toLong() ?: 0,
+                    amountLamports = quoteDto.outAmount?.toLong() ?: 0,
                     decimals = outDecimals
                 )
 
                 val canExit = seeIfExitRouteExists(
                     inputAddress = outputAddress,
                     outputAddress = inputAddress,
-                    amountToUse = readableOut.setScale(2, RoundingMode.DOWN).toPlainString()
+                    amountToUse = quoteDto.outAmount
                 )
 
                 Logger.d("Can Exit: $canExit")
 
-                createTransaction(
-                    quote = quoteRaw,
-                    amount = amount,
-                    quoteDto = quoteDto,
-                    inputToken = inputToken,
-                    outputToken = outputToken,
-                    swapMode = _quoteConfig.value.swapMode,
-                    initialPrice = initialPrice,
-                    shouldTrack = shouldTrack,
-                )
+                if (canExit) {
+                    createTransaction(
+                        quote = quoteRaw,
+                        amount = amount,
+                        quoteDto = quoteDto,
+                        inputToken = inputToken,
+                        outputToken = outputToken,
+                        swapMode = _quoteConfig.value.swapMode,
+                        initialPrice = initialPrice,
+                        shouldTrack = shouldTrack,
+                    )
+                }
+                
             } catch (e: Exception) {
                 Logger.d("Exception getting Quote ${e.message}")
             }
