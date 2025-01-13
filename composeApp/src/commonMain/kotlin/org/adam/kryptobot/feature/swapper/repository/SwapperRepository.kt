@@ -160,7 +160,6 @@ class SwapperRepositoryImpl(
     ) {
         if (baseTokenAddress == null || quoteTokenAddress == null) return
 
-        Logger.d("Initial price is $initialPrice")
         val (inputAddress, outputAddress) = getSwapTokenAddresses(
             swapMode = _quoteConfig.value.swapMode,
             baseTokenAddress = baseTokenAddress,
@@ -172,15 +171,12 @@ class SwapperRepositoryImpl(
             quoteTokenAddress = quoteTokenSymbol ?: ""
         )
         Logger.d("In is $inputSymbol out is $outputSymbol amount is $amount")
-        Logger.d("In is $inputAddress out is $outputAddress")
 
         withContext(Dispatchers.IO) {
             try {
                 val decimals = solanaApi.getMintDecimalsAmount(inputAddress)
                 val outDecimals = solanaApi.getMintDecimalsAmount(outputAddress)
                 val amountToUse = formatTokenAmountForQuote(amount, decimals)
-                Logger.d("Amount is $amount amountToUse is $amountToUse")
-                Logger.d("Decimals for quote input $decimals for output $outDecimals $amountToUse")
 
                 val (quoteRaw, quoteDto) = swapApi.getQuote(
                     inputAddress = inputAddress,
@@ -209,25 +205,16 @@ class SwapperRepositoryImpl(
                     return@withContext
                 }
 
-//                quoteDto.routePlan.forEach {
-//                    Logger.d("${it.swapInfo.feeMint} : ${it.swapInfo.feeAmount} : ${it.swapInfo.ammKey} : ${it.swapInfo.label}}")
-//                }
-
-                //Logger.d("Raw amounts In: ${quoteDto.inAmount} Out: ${quoteDto.outAmount}")
-
                 val readableIn = adjustTokenAmount(quoteDto.inAmount, decimals)
                 val readableOut = adjustTokenAmount(quoteDto.outAmount, outDecimals)
 
                 Logger.d("in amount: $readableIn | out: $readableOut")
 
-                //Logger.d("In mint ${quoteDto.inputMint} is Solana ${quoteDto.inputMint == SOLANA_MINT_ADDRESS}")
-                //Logger.d("Out mint ${quoteDto.outputMint} is Solana ${quoteDto.outputMint == SOLANA_MINT_ADDRESS}")
-
                 val inputToken = TransactionToken(
                     symbol = inputSymbol,
                     address = inputAddress,
                     amount = readableIn,
-                    amountLamports = quoteDto.inAmount?.toLong() ?: 0,
+                    amountLamports = quoteDto.inAmount.toLong(),
                     decimals = decimals
                 )
 
@@ -235,15 +222,20 @@ class SwapperRepositoryImpl(
                     symbol = outputSymbol,
                     address = outputAddress,
                     amount = readableOut,
-                    amountLamports = quoteDto.outAmount?.toLong() ?: 0,
+                    amountLamports = quoteDto.outAmount.toLong(),
                     decimals = outDecimals
                 )
 
-                val canExit = seeIfExitRouteExists(
-                    inputAddress = outputAddress,
-                    outputAddress = inputAddress,
-                    amountToUse = quoteDto.outAmount
-                )
+
+                val canExit = if (shouldTrack) {
+                    seeIfExitRouteExists(
+                        inputAddress = outputAddress,
+                        outputAddress = inputAddress,
+                        amountToUse = quoteDto.outAmount
+                    )
+                } else {
+                    true
+                }
 
                 Logger.d("Can Exit: $canExit")
 
@@ -258,8 +250,10 @@ class SwapperRepositoryImpl(
                         initialPrice = initialPrice,
                         shouldTrack = shouldTrack,
                     )
+                } else {
+                    //TODO  Add base token to a filter list and likely remove it from tracked list once this is a use case
                 }
-                
+
             } catch (e: Exception) {
                 Logger.d("Exception getting Quote ${e.message}")
             }
