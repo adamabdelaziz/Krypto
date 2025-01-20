@@ -6,7 +6,7 @@ import java.math.BigDecimal
 data class TrackedTransaction(
     val transaction: Transaction,
     val highestObservedPriceSol: BigDecimal,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
 ) {
     fun updatePrice(newPrice: BigDecimal): TrackedTransaction {
         return if (newPrice > highestObservedPriceSol) {

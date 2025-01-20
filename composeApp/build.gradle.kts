@@ -70,6 +70,10 @@ kotlin {
                 implementation(libs.sol4k)
 
                 implementation(libs.combineTuple)
+
+                //Local Telegram Libs
+                implementation(files("${rootDir}/externalLibs/tdlib.jar"))
+                implementation(files("${rootDir}/td-ktx"))
             }
         }
 

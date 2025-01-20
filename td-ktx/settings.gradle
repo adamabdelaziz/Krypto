@@ -1,0 +1,6 @@
+rootProject.name='Telegram Flow'
+include ':libtd-ktx'
+include ':example'
+include ':app'
+include(":td-ktx")
+project(":td-ktx").projectDir = file("${rootDir}/td-ktx")

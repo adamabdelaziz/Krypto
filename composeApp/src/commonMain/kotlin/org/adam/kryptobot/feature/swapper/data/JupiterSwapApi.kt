@@ -150,8 +150,12 @@ class KtorJupiterSwapApi(private val client: HttpClient) : JupiterSwapApi {
                         put("quoteResponse", Json.parseToJsonElement(quoteResponse))
                         put("userPublicKey", userPublicKey)
                         put("wrapAndUnwrapSol", true)
-                        put("prioritizationFeeLamports", 500_000)
-                        put("computeUnitLimit", 2_000_000) // Increase compute units
+                        if (prioritizationFee != null) {
+                            put("prioritizationFeeLamports", prioritizationFee)
+                        } else {
+                            put("prioritizationFeeLamports", "auto")
+                        }
+                        put("computeUnitLimit", 2_000_000)
                     }.toString()
                 )
             }

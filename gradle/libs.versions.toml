@@ -34,6 +34,8 @@ animationCoreLint = "1.8.0-alpha07"
 uiGraphicsLint = "1.8.0-alpha07"
 uiToolingPreviewAndroid = "1.7.6"
 composeIcons = "1.1.1"
+telegramKotlin = "1.9.0"
+telegramLib = "1.7.9"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -95,6 +97,10 @@ androidx-ui-tooling-preview-android = { group = "androidx.compose.ui", name = "u
 #room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 #room-runtime-android = { module = "androidx.room:room-runtime-android", version.ref = "room" }
 #sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
+
+#Telegram
+telegram = {module = "org.drinkless.tdlib:tdlib", version.ref = "telegramLib"}
+telegram-kotlin = { module = "io.github.tdlibx:td-ktx", version.ref = "telegramKotlin" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

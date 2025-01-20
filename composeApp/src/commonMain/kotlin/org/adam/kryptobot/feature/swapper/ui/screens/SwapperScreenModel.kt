@@ -70,28 +70,28 @@ class SwapperScreenModel(
 
                 strategy?.let { strat ->
                     if (trans.shouldExit(currentPrice = price, strategy = strat)) {
-                        /*
-                            Create quote here that auto swaps and does not get tracked
-                         */
-
                         val amount = determineSwapAmount(
                             transaction = trans.transaction,
                             currentPrice = price,
                             strategy = strat
                         )
 
-                        Logger.d("Should exit at $price amount $amount for ${trans.transaction.outToken.symbol} initial price was ${trans.transaction.initialDexPriceSol}")
+                        if (trans.isCompleted) {
+                            Logger.d("Transaction completed but thinks it should go for profit ")
+                        } else {
+                            Logger.d("Should exit at $price amount $amount for ${trans.transaction.outToken.symbol} initial price was ${trans.transaction.initialDexPriceSol}")
 
-                        getQuote(
-                            baseTokenAddress = dexPair.quoteToken?.address,
-                            baseTokenSymbol = dexPair.quoteToken?.symbol,
-                            quoteTokenAddress = dexPair.baseToken?.address,
-                            quoteTokenSymbol = dexPair.baseToken?.symbol,
-                            amount = amount.toDouble(),
-                            initialPrice = price,
-                            swapMode = SwapMode.ExactIn,
-                            shouldTrack = false,
-                        )
+                            getQuote(
+                                baseTokenAddress = dexPair.quoteToken?.address,
+                                baseTokenSymbol = dexPair.quoteToken?.symbol,
+                                quoteTokenAddress = dexPair.baseToken?.address,
+                                quoteTokenSymbol = dexPair.baseToken?.symbol,
+                                amount = amount.toDouble(),
+                                initialPrice = price,
+                                swapMode = SwapMode.ExactIn,
+                                shouldTrack = false,
+                            )
+                        }
                     }
                 }
             }
@@ -253,10 +253,12 @@ class SwapperScreenModel(
         val platformFeeReverse = if (dexPair.liquidityScore > 1.5) 0.3 else 0.1
 
         screenModelScope.launch {
-            updateQuoteConfig { copy(
-                slippageBps = (slippageReverse * 100).toInt(),
-                platformFeeBps = (platformFeeReverse * 100).toInt()
-            ) }
+            updateQuoteConfig {
+                copy(
+                    slippageBps = (slippageReverse * 100).toInt(),
+                    platformFeeBps = (platformFeeReverse * 100).toInt()
+                )
+            }
 
             getQuote(
                 baseTokenAddress = dexPair.baseToken?.address,

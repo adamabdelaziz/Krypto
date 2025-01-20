@@ -19,6 +19,7 @@ import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 import org.adam.kryptobot.util.decodeBase58
 import org.adam.kryptobot.util.encodeBase58
+import org.drinkless.tdlib.TdApi.StarTransactionTypeTelegramApiUsage
 import org.sol4k.AccountMeta
 import org.sol4k.Base58
 import org.sol4k.Connection
@@ -74,6 +75,7 @@ interface SolanaApi {
 class SolanaApiImpl(private val client: HttpClient) : SolanaApi {
     //TODO: Seems to only be necessary if we want to get the private key from the public key or for signing for transactions(which means it wouldnt need to be public)
     private fun getWalletKeypair(privateKey: String): Keypair {
+
         val wallet = Keypair.fromSecretKey(Base58.decode(privateKey))
         Logger.d("Public Key ${wallet.publicKey} private key $privateKey")
         Logger.d("Encoded Private ${wallet.secret.encodeBase58()}")
