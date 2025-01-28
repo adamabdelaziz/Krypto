@@ -1,5 +1,6 @@
 package org.adam.kryptobot.ui
 
+import TelegramTrackerTab
 import WalletTab
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -70,6 +71,7 @@ fun AppScaffold(
                 TabNavigationItem(ScannerTab)
                 TabNavigationItem(SwapperTab)
                 TabNavigationItem(WalletTab)
+                TabNavigationItem(TelegramTrackerTab)
             }
         },
         content = { CurrentTab() },

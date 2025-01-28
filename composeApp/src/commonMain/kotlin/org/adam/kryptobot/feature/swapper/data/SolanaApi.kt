@@ -15,6 +15,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.adam.kryptobot.BuildConfig.HELIUS_URL
 import org.adam.kryptobot.util.SECOND_WALLET_PRIVATE_KEY
 import org.adam.kryptobot.util.SOLANA_MINT_ADDRESS
 import org.adam.kryptobot.util.decodeBase58
@@ -43,29 +44,27 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 interface SolanaApi {
     fun getWalletBalance(
         walletKey: String,
-        rpcUrl: String = rpcUrlToUse,
+        rpcUrl: String = HELIUS_URL,
         commitment: Commitment = Commitment.CONFIRMED
     ): BigInteger
 
-    suspend fun createATAForMint(rpcUrl: String = rpcUrlToUse, ownerWalletAddress: String, mintAddress: String = SOLANA_MINT_ADDRESS)
+    suspend fun createATAForMint(
+        rpcUrl: String = HELIUS_URL,
+        ownerWalletAddress: String,
+        mintAddress: String = SOLANA_MINT_ADDRESS
+    )
 
     fun performSwapTransaction(
         privateKey: String,
         instructions: String,
-        rpcUrl: String = rpcUrlToUse,
+        rpcUrl: String = HELIUS_URL,
         commitment: Commitment = Commitment.FINALIZED,
     ): Result<String>
 
     fun getMintDecimalsAmount(address: String): Int
 
     suspend fun getTokenBalances(publicKey: String): List<Pair<String, Double>>
-    suspend fun checkTokenValidity(mintAddress: String, rpcUrl: String = rpcUrlToUse): Boolean
-
-    companion object {
-
-        private const val HELIUS_URL = "https://mainnet.helius-rpc.com/?api-key=b0a749b1-ac7a-4f58-a95d-2a9ce0b7fef6" //Default being RpcUrl.MAINNET
-        val rpcUrlToUse = HELIUS_URL
-    }
+    suspend fun checkTokenValidity(mintAddress: String, rpcUrl: String = HELIUS_URL): Boolean
 }
 
 /**
