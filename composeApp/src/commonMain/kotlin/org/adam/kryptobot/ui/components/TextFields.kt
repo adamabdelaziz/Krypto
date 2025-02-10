@@ -90,13 +90,22 @@ fun InputTextFieldImproved(
     label: String = "Enter Text",
     isError: Boolean = false,
 ) {
+    var textFieldValue by remember { mutableStateOf(TextFieldValue(text)) }
+
+    LaunchedEffect(text) {
+        if (text != textFieldValue.text) {
+            textFieldValue = TextFieldValue(text)
+        }
+    }
+
     OutlinedTextField(
         modifier = modifier,
         colors = AppOutlinedTextFieldColors,
         shape = CurrentShapes.pill,
-        value = text,
-        onValueChange = {
-            onTextChanged(it)
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            textFieldValue = newValue
+            onTextChanged(newValue.text)
         },
         label = { TextFieldLabel(text = label) },
         isError = isError,
