@@ -15,5 +15,4 @@ val coroutineModule = module {
     single(named(MAIN_SCOPE)) { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
     single(named(IO_SCOPE)) { CoroutineScope(SupervisorJob() + Dispatchers.IO) }
     single(named(DEFAULT_SCOPE)) { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
-
 }

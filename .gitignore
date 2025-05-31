@@ -17,3 +17,4 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 composeApp/src/commonMain/kotlin/org/adam/kryptobot/BuildConfig.kt
+composeApp/src/commonMain/kotlin/org/adam/kryptobot/util/AppConstants.kt
